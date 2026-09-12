@@ -46,6 +46,22 @@ var NEL_PROMPT = {
 
 var FIRST_SCENE = "greyford-inn";
 
+/* Used when the SECOND reason is GENERIC, whatever action they picked.
+ *
+ * Without it the ending was keyed on the final action alone, so a player could
+ * reach beat 2, type "i dunno", and still be handed the daughter. That makes
+ * the second reading decorative, and the whole claim is that the story responds
+ * to the reason. Deliberately action-agnostic so it fits all four branches, and
+ * deliberately does not find her.
+ *
+ * GENERIC only. PARTIAL and CONTRADICTED engaged with the text and keep their
+ * branch ending; refusing to read at all is the one thing that forfeits it. */
+var UNEARNED_ENDING =
+  "The rain comes on properly while you are still making up your mind. By the " +
+  "time you move, the track is gone, and so is whatever you might have seen " +
+  "from the top of the road. In the morning the baker is still standing at the " +
+  "door of the inn, asking.";
+
 var SCENES = {
 
   /* ---------------------------------------------------------------- BEAT 1 */
@@ -306,8 +322,8 @@ var SCENES = {
         "hill goes down behind another. Dorin keeps a good pace for a man who " +
         "says he walked all night, and he never once looks back to check the " +
         "road. He does not need to. When the sun comes up he is gone, and you " +
-        "are a long way from anywhere, and every hour you walked was an hour in " +
-        "the wrong direction.",
+        "are a long way from anywhere, and every hour you walked took you " +
+        "further from her.",
       "Ask him where you are":
         "You stop in the middle of the dry road and ask him where you are. " +
         "Dorin looks past you, back at the lights of Greyford, much smaller now " +
@@ -322,5 +338,6 @@ var SCENES = {
 
 /* Same file, both runtimes. No build step, no dependency. */
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { SCENES: SCENES, GOAL: GOAL, NEL_PROMPT: NEL_PROMPT, FIRST_SCENE: FIRST_SCENE };
+  module.exports = { SCENES: SCENES, GOAL: GOAL, NEL_PROMPT: NEL_PROMPT,
+                    FIRST_SCENE: FIRST_SCENE, UNEARNED_ENDING: UNEARNED_ENDING };
 }

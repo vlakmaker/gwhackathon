@@ -66,9 +66,11 @@ const CONTINUITY = {
   1: "- Another beat follows this one. End on the moment, not after it: they may\n" +
      "  stand, agree, or move towards the door, but do not complete the journey,\n" +
      "  skip ahead in time, or end the night.",
-  2: "- This is the last narration in the story. Nothing follows it, so do not set\n" +
-     "  up what happens next or hint at a scene to come. End on the moment they\n" +
-     "  are in."
+  2: "- This is the last narration in the story, and a written ending follows it\n" +
+     "  immediately. Narrate only the moment they act \u2014 the first breath of it.\n" +
+     "  Do not narrate the journey, where they arrive, what they find, or how it\n" +
+     "  turns out. None of that is yours to invent: it is already written, and\n" +
+     "  your narration sits directly before it."
 };
 
 /* SPEC.md § "The DM prompt", verbatim. Edit the spec, then edit this. */
@@ -133,7 +135,13 @@ action they chose.
 
 RULES FOR THE NARRATION:
 - Never say correct, incorrect, right, wrong, well done, or good thinking.
-- Never restate or explain the hidden inference.
+- Never restate or explain the hidden inference, and never put both supporting
+  details in the same narration. Naming one of them is allowed. Naming both, or
+  saying what they imply together, hands over the answer the player was supposed
+  to reach, and the next player learns nothing. Never write a sentence like "his
+  boots are dry and that road is mud", or "your boots are dry", or "they are
+  still dry, still grey with dust". Describe what people do, not what the
+  evidence means.
 - Always honour the action they chose, whatever the bucket. If they said go,
   they go.
 ${CONTINUITY[scene.beat === 2 ? 2 : 1]}
@@ -198,6 +206,19 @@ function salvage(raw) {
   if (!bm && !narration) return null;
   return { bucket: bm ? bm[1] : null, narration };
 }
+
+/* The one prompt rule the model does not reliably hold, watched failing across
+ * three playtests: it writes the inference back to the player as if confirming
+ * it were the reward.
+ *
+ * Narrow on purpose. Mentioning the boots is fine; mentioning the road is fine.
+ * Carrying BOTH halves in one narration is handing over the connection, and the
+ * connection is the entire product. Half a clue is a nudge, which is what
+ * PARTIAL is for; both halves is the answer.
+ */
+const SAYS_DRY = /\b(dry|dust|dusty)\b/i;
+const SAYS_WET = /\b(mud|muddy|marsh)\b/i;
+const leaksInference = (n) => SAYS_DRY.test(n) && SAYS_WET.test(n);
 
 /* "integrated", "INTEGRATED.", "Contradicted", "bucket: PARTIAL" all land. */
 function normaliseBucket(v) {
@@ -379,7 +400,11 @@ exports.handler = async (event) => {
     const parsed = extractJSON(out.text);
     const bucket = parsed && normaliseBucket(parsed.bucket);
     const narration = parsed && cleanNarration(parsed.narration);
-    return bucket && narration ? { bucket, narration } : null;
+    if (!bucket || !narration) return null;
+    /* A narration that explains the inference is unusable in the same way a
+     * truncated one is: it is well-formed and it ruins the thing. Retry. */
+    if (leaksInference(narration)) return null;
+    return { bucket, narration };
   };
 
   let used = MODEL;
@@ -390,7 +415,7 @@ exports.handler = async (event) => {
    * three are the call failing, and a flat fallback narration mid-scene costs
    * the player more than one extra second does. Still never a third call. */
   if (!got) {
-    console.error(`turn: retrying, primary ${out.truncated ? "truncated" : out.ok ? "unreadable" : out.why} scene=${scene_id}`);
+    console.error(`turn: retrying, primary ${out.truncated ? "truncated" : out.ok ? "unreadable or leaked the inference" : out.why} scene=${scene_id}`);
     used = FALLBACK_MODEL;
     out  = await callModel(FALLBACK_MODEL, prompt, apiKey, referer);
     got  = understand(out);
@@ -411,6 +436,7 @@ exports.handler = async (event) => {
  * buildPrompt especially: a benchmark against a copy of the prompt measures
  * the copy. */
 module.exports.buildPrompt = buildPrompt;
+module.exports.leaksInference = leaksInference;
 module.exports.RATE_MAX = RATE_MAX;
 module.exports.TOTAL_MAX = TOTAL_MAX;
 module.exports.extractJSON = extractJSON;

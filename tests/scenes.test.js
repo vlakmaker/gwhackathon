@@ -100,7 +100,10 @@ test("beat 2 scenes stay short enough to re-read", () => {
 /* Never say correct, incorrect, well done, or good spotting. Applies to every
  * word we ship, not only to what the model generates. */
 test("no shipped prose delivers a verdict", () => {
-  const verdict = /\b(correct|incorrect|well done|good spotting|good thinking|right answer|wrong answer)\b/i;
+  /* AGENTS.md rule 2 is absolute: never correct, incorrect, right, wrong. The
+     narrow version of this regex missed "the wrong direction" sitting in a
+     shipped ending, which a player reads as a judgement whatever it describes. */
+  const verdict = /\b(correct|incorrect|wrong|right|well done|good spotting|good thinking)\b/i;
   /* "it counts for more when it's early" was scoring language in a game built
      on never scoring anyone. Catch the softer forms too. */
   const scoring = /\b(counts for|points|score|better next time|you should have)\b/i;
@@ -199,4 +202,17 @@ test("every path that earns it actually finds her", () => {
     "walking on past the dry road twice should not still find her");
   assert.ok(closes.test(c.endings["Ask him where you are"]),
     "turning round is the recovery and should find her");
+});
+
+/* The ending was keyed on the final action alone, so a player could reach
+ * beat 2, type "i dunno", and still be handed the daughter — which makes the
+ * second reading decorative. */
+test("there is an ending for a second reason that engaged with nothing", () => {
+  const { UNEARNED_ENDING } = require("../public/scenes.js");
+  assert.equal(typeof UNEARNED_ENDING, "string");
+  assert.ok(UNEARNED_ENDING.trim().length > 40, "too short to land");
+  const closes = /\bshe is\b|\bis inside\b|\bat the top of it\b/i;
+  assert.ok(!closes.test(UNEARNED_ENDING), "it finds her, which is the whole point of not using it");
+  const verdict = /\b(correct|incorrect|wrong|right|well done)\b/i;
+  assert.ok(!verdict.test(UNEARNED_ENDING), "it grades the player");
 });

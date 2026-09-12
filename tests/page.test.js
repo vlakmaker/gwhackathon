@@ -216,3 +216,8 @@ test("nothing is printed after the ending", () => {
   assert.ok(!visible.includes('id="done-note"'), "the done block still prints a line");
   assert.ok(visible.includes('id="again"'), "the restart control went with it");
 });
+
+test("a GENERIC second reason forfeits the ending that finds her", () => {
+  assert.match(html, /bucket === "GENERIC"[\s\S]{0,120}UNEARNED_ENDING/,
+    "the ending still depends only on the final action");
+});

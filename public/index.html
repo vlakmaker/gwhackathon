@@ -439,7 +439,12 @@ function advance(bucket, narration) {
      took. A single fixed ending contradicted half of them — the quarry branch
      offered "Make him talk" and then ended with you halfway up the pit road. */
   if (scene.beat === 2) {
-    var ending = scene.endings && scene.endings[state.chosen];
+    /* The ending depends on the second REASON as well as the second action. A
+       player who types "i dunno" here has stopped reading, and handing them the
+       daughter anyway would make the second reading decorative. */
+    var ending = bucket === "GENERIC"
+      ? UNEARNED_ENDING
+      : (scene.endings && scene.endings[state.chosen]);
     if (ending) para(ending, "ending");
     show("done");
     el("reason").blur();

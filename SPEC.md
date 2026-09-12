@@ -266,15 +266,23 @@ action they chose.
 
 RULES FOR THE NARRATION:
 - Never say correct, incorrect, right, wrong, well done, or good thinking.
-- Never restate or explain the hidden inference.
+- Never restate or explain the hidden inference, and never put both supporting
+  details in the same narration. Naming one of them is allowed. Naming both, or
+  saying what they imply together, hands over the answer the player was supposed
+  to reach, and the next player learns nothing. Never write a sentence like "his
+  boots are dry and that road is mud", or "your boots are dry", or "they are
+  still dry, still grey with dust". Describe what people do, not what the
+  evidence means.
 - Always honour the action they chose, whatever the bucket. If they said go,
   they go.
 - Another beat follows this one. End on the moment, not after it: they may
   stand, agree, or move towards the door, but do not complete the journey,
   skip ahead in time, or end the night.
   [on beat 2 this line is replaced by: "This is the last narration in the
-  story. Nothing follows it, so do not set up what happens next or hint at a
-  scene to come. End on the moment they are in."]
+  story, and a written ending follows it immediately. Narrate only the moment
+  they act — the first breath of it. Do not narrate the journey, where they
+  arrive, what they find, or how it turns out. None of that is yours to
+  invent: it is already written, and your narration sits directly before it."]
 - INTEGRATED: the world rewards it. Something opens up.
 - PARTIAL: Nel draws attention to a detail the player did NOT mention, without
   explaining why it matters. Never point at something their reason already

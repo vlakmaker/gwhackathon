@@ -22,6 +22,12 @@ beforeEach(() => {
   calls = []; logs = [];
   process.env.OPENROUTER_API_KEY = FAKE_KEY;
   process.env.URL = "https://example.test";
+  /* The abuse ceiling is module-level state and none of these tests send an IP,
+   * so they all share one visitor bucket. Without this the file silently became
+   * order- and count-dependent: adding a 40th turn started refusing the rest,
+   * and the failure looks like the handler ignoring your stub. The limiter has
+   * its own file, which switches it on deliberately. */
+  process.env.TURN_NO_LIMIT = "1";
   realFetch = globalThis.fetch;
   realLog = console.log; realError = console.error;
   console.log = (...a) => logs.push(a.join(" "));
@@ -33,6 +39,7 @@ afterEach(() => {
   console.log = realLog; console.error = realError;
   delete process.env.OPENROUTER_API_KEY;
   delete process.env.URL;
+  delete process.env.TURN_NO_LIMIT;
 });
 
 /* --- helpers ----------------------------------------------------------- */
@@ -112,7 +119,8 @@ test("the prompt keeps the instruction that makes this measure reading", async (
   assert.ok(prompt.includes("Never classify the chosen action."));
   assert.ok(prompt.includes("Either action can be paired with any bucket."));
   assert.ok(prompt.includes("Never say correct, incorrect, right, wrong, well done, or good thinking."));
-  assert.ok(prompt.includes("Never restate or explain the hidden inference."));
+  assert.ok(prompt.includes("Never restate or explain the hidden inference"));
+  assert.ok(prompt.includes("never put both supporting"), "the prompt does not forbid naming both details");
   assert.ok(prompt.includes("Another beat follows this one."));
 });
 
@@ -354,4 +362,39 @@ test("the nudge rule forbids pointing at what the player already named", async (
   assert.ok(p.includes("Never point at something their reason already"),
     "the prompt does not forbid re-pointing at a named detail");
   assert.ok(p.includes("point at the other"), "the prompt does not say to point at the unused one");
+});
+
+/* Watched failing across three playtests: the model writes the inference back
+ * to the player as if confirming it were the reward. "his boots are dry, and
+ * that road is mud" turns a consequence into a lesson. */
+test("a narration carrying both halves of the inference is rejected", async () => {
+  const leak = '{"bucket":"INTEGRATED","narration":"You stay by the fire. His boots are dry, and that road is mud to the ankle."}';
+  stubFetch(() => ok(leak), () => ok(GOOD));
+  const res = await post(turnBody());
+  assert.equal(calls.length, 2, "a leaked inference should trigger the retry");
+  const b = JSON.parse(res.body);
+  assert.ok(!/mud/i.test(b.narration), "the leaked narration was shipped anyway");
+});
+
+test("one half of the inference is allowed — half a clue is a nudge", async () => {
+  const halves = [
+    '{"bucket":"PARTIAL","narration":"Nel looks at the boots by the fire and says nothing at all."}',
+    '{"bucket":"CONTRADICTED","narration":"The mud sucks at your boots with every step you take."}'
+  ];
+  for (const h of halves) {
+    calls = [];
+    stubFetch(() => ok(h));
+    const res = await post(turnBody());
+    assert.equal(calls.length, 1, "a single detail should not cost a retry: " + h);
+    assert.equal(res.statusCode, 200);
+  }
+});
+
+test("both models leaking degrades rather than teaching the answer", async () => {
+  stubFetch(() => ok('{"bucket":"INTEGRATED","narration":"Dry boots, and the marsh road is mud."}'));
+  const res = await post(turnBody());
+  assert.equal(calls.length, 2);
+  const b = JSON.parse(res.body);
+  assert.equal(b.bucket, "GENERIC");
+  assert.ok(!/marsh/i.test(b.narration), "a leak reached the player through the fallback");
 });
