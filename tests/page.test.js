@@ -81,3 +81,48 @@ test("the typed reason is appended to the story", () => {
   assert.ok(/para\(\s*said/.test(html), "the reason is never rendered");
   assert.ok(/reason\.trim\(\)/.test(html), "the reason is not trimmed before display");
 });
+
+/* --- step 5: the typography is a requirement, not decoration ------------- */
+
+test("body text is serif", () => {
+  const body = html.match(/body\s*\{[^}]*\}/);
+  assert.ok(body, "no body rule");
+  assert.match(body[0], /serif/, "body is not set in a serif");
+  assert.ok(!/sans-serif/.test(body[0]), "body is set in a sans");
+});
+
+test("the measure is constrained and the leading is generous", () => {
+  assert.match(html, /--measure:\s*\d+(\.\d+)?em/, "no measure token");
+  assert.match(html, /max-width:\s*var\(--measure\)/, "the measure is not applied");
+  const lh = html.match(/font:\s*\d+\s+[\d.]+rem\/([\d.]+)/);
+  assert.ok(lh, "body line-height is not set in the font shorthand");
+  assert.ok(parseFloat(lh[1]) >= 1.5, `line-height ${lh[1]} is too tight to read`);
+});
+
+/* SPEC: "Narration appears below. Not a verdict. The story continues."
+   A box, border, background or icon makes it read as feedback. */
+test("the narration is not boxed, tinted, or otherwise marked as a response", () => {
+  const rule = html.match(/p\.narration\s*\{([^}]*)\}/);
+  assert.ok(rule, "the .narration rule is gone — check it did not gain styling elsewhere");
+  assert.ok(!/border|background|box-shadow|padding|color\s*:|::before|content/.test(rule[1]),
+    "the narration is being styled as a callout: " + rule[1].trim());
+});
+
+/* The player's own lines must not compete with the prose. */
+test("the player's lines are quieter than the story", () => {
+  assert.match(html, /p\.chose[\s\S]{0,200}--quiet/, "the chosen action is not set quiet");
+  assert.match(html, /p\.said[\s\S]{0,80}font-style:\s*italic/, "the typed reason is not italic");
+});
+
+/* No webfont, no CDN: it must render instantly and offline, and the CSP story
+   stays trivial. */
+test("nothing is fetched from anywhere", () => {
+  assert.ok(!/@import|fonts\.googleapis|fonts\.gstatic|cdn\./i.test(html),
+    "the page pulls in an external resource");
+  assert.ok(!/<link[^>]+stylesheet/i.test(html), "there is an external stylesheet");
+});
+
+test("it is legible in a dark room and on a phone", () => {
+  assert.match(html, /prefers-color-scheme:\s*dark/, "no dark scheme");
+  assert.match(html, /@media[^{]*max-width/, "no narrow-screen rule");
+});

@@ -6,14 +6,164 @@
 <title>The Finder</title>
 <!-- Styling is step 5. This is only enough to see the flow. -->
 <style>
-  body { max-width: 34em; margin: 2rem auto; padding: 0 1rem; }
-  .ask { font-weight: 600; }
-  .narration { border-left: 3px solid #ccc; padding-left: 1rem; }
-  .said { font-style: italic; }
-  .pending { opacity: .6; }
-  button { display: block; margin: .4rem 0; }
-  input { width: 100%; }
-  [hidden] { display: none !important; }
+/* Step 5: readable, and nothing else.
+ *
+ * Serif, roughly a 65 character measure, generous leading. A twelve year old
+ * has to want to finish the first paragraph, and nothing here may compete with
+ * the prose for attention.
+ *
+ * One rule drives the rest: the narration must read as story, not as feedback.
+ * No box, no border, no icon, no colour that says "response". It is set
+ * exactly like the scene text, because it is the same story. What separates
+ * the turns is the player's own voice, and that is set quieter than the story
+ * rather than louder.
+ */
+
+:root {
+  --paper:  #fdfcfa;
+  --ink:    #221f1c;
+  --quiet:  #6b655d;   /* the player's own lines, and the waiting state */
+  --rule:   #e0dbd2;
+  --accent: #7a3b2e;   /* the clock, and nothing else */
+  --measure: 34em;     /* ~65 characters at this size */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:  #1b1a18;
+    --ink:    #e9e5de;
+    --quiet:  #9b948a;
+    --rule:   #35322e;
+    --accent: #d9937f;
+  }
+}
+
+html { background: var(--paper); }
+
+body {
+  margin: 0 auto;
+  padding: 3rem 1.25rem 6rem;
+  max-width: var(--measure);
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.1875rem/1.65 "Iowan Old Style", "Palatino Linotype", Palatino,
+        "Book Antiqua", Georgia, "Times New Roman", serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- the goal line: role, then the clock. Always visible. --------------- */
+
+header {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+#goal-role    { margin: 0 0 .35rem; color: var(--quiet); font-size: .95rem; }
+#goal-tonight { margin: 0; color: var(--accent); font-weight: 600; font-size: 1rem; }
+
+/* --- the story ---------------------------------------------------------- */
+
+main p { margin: 0 0 1.15rem; }
+
+/* The closing question. The scene stops here and they must act. */
+main p.ask {
+  margin-top: 1.6rem;
+  font-weight: 600;
+}
+
+/* The player's own voice: the action they took, then what they told Nel.
+   Quieter than the story, and indented, so the prose stays the loudest thing
+   on the page. */
+main p.chose,
+main p.said {
+  margin-left: 1.25rem;
+  color: var(--quiet);
+  font-size: .98rem;
+}
+main p.chose { margin-bottom: .3rem; }
+main p.said  { font-style: italic; margin-bottom: 1.6rem; }
+
+/* Deliberately not styled. It is story. */
+main p.narration { }
+
+/* The ending gets air and a rule, because it is the end. */
+main p.ending {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+/* --- choosing ----------------------------------------------------------- */
+
+#controls { margin-top: 2rem; }
+
+#options button {
+  display: block;
+  width: 100%;
+  margin: 0 0 .6rem;
+  padding: .7rem .95rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.0625rem;
+  text-align: left;
+  cursor: pointer;
+}
+#options button:hover  { border-color: var(--ink); }
+#options button:active { transform: translateY(1px); }
+
+/* --- Nel asking --------------------------------------------------------- */
+
+#nel-stage    { margin: 0 0 .35rem; color: var(--quiet); font-size: .98rem; }
+#nel-question { margin: 0 0 .9rem; font-weight: 600; }
+
+#reason {
+  width: 100%;
+  box-sizing: border-box;
+  padding: .7rem .95rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.0625rem;
+}
+#reason::placeholder { color: var(--quiet); font-style: italic; }
+#reason:focus        { outline: 2px solid var(--accent); outline-offset: 1px; }
+#reason:disabled     { opacity: .55; }
+
+#send {
+  margin-top: .7rem;
+  padding: .6rem 1.1rem;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+#send:disabled { opacity: .45; cursor: default; }
+
+/* Waiting. Quiet on purpose — a spinner would make this feel like marking. */
+#pending {
+  margin: 0;
+  color: var(--quiet);
+  font-style: italic;
+}
+
+[hidden] { display: none !important; }
+
+@media (max-width: 32em) {
+  body { padding: 2rem 1.1rem 4rem; font-size: 1.125rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #options button:active { transform: none; }
+}
 </style>
 </head>
 <body>
