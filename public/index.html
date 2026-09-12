@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Finder</title>
+<!-- Styling is step 5. This is only enough to see the flow. -->
+<style>
+  body { max-width: 34em; margin: 2rem auto; padding: 0 1rem; }
+  .ask { font-weight: 600; }
+  .narration { border-left: 3px solid #ccc; padding-left: 1rem; }
+  .pending { opacity: .6; }
+  button { display: block; margin: .4rem 0; }
+  input { width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- The role and the clock. Always visible: without it there is no reason to
+     investigate anything. -->
+<header>
+  <p id="goal-role"></p>
+  <p id="goal-tonight" class="ask"></p>
+</header>
+
+<!-- Everything that has happened, appended. The player can always re-read the
+     scene they are being asked about. -->
+<main id="story" aria-live="polite"></main>
+
+<!-- One of three states: choose an action, answer Nel, or waiting. -->
+<section id="controls">
+  <div id="options" hidden></div>
+
+  <form id="why" hidden>
+    <p id="nel-stage"></p>
+    <p id="nel-question" class="ask"></p>
+    <input id="reason" type="text" autocomplete="off" enterkeyhint="send">
+    <button type="submit" id="send">Tell her</button>
+  </form>
+
+  <p id="pending" class="pending" hidden></p>
+</section>
+
+<script src="scenes.js"></script>
+<script>
+"use strict";
+
+/* The bucket decides which scene comes next and is never shown to the player.
+ * There is no score anywhere in this file, on purpose. */
+
+var ENDPOINT = "/.netlify/functions/turn";
+
+/* If our own function is unreachable the player still gets a sentence, never
+ * an error. Same text the function uses for its own failures, so an outage
+ * reads as a shrug rather than a bug. */
+var OFFLINE_NARRATION =
+  "Nel looks at you for a moment, then back at Dorin. The fire settles. " +
+  "Outside, the rain still has not started.";
+
+var el = function (id) { return document.getElementById(id); };
+
+var state = {
+  sceneId: FIRST_SCENE,
+  chosen: null,
+  inFlight: false
+};
+
+/* ---------------------------------------------------------------- rendering */
+
+function para(text, cls) {
+  var p = document.createElement("p");
+  if (cls) p.className = cls;
+  p.textContent = text;
+  el("story").appendChild(p);
+  return p;
+}
+
+/* The last paragraph of a scene is its closing question — the forced choice.
+ * It gets the emphasis so the player knows they are being asked. */
+function renderScene(scene) {
+  var parts = scene.scene_text.split("\n\n");
+  parts.forEach(function (t, i) {
+    para(t, i === parts.length - 1 ? "ask" : null);
+  });
+}
+
+function renderOptions(scene) {
+  var box = el("options");
+  box.textContent = "";
+  scene.options.forEach(function (label) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.addEventListener("click", function () { chooseOption(label); });
+    box.appendChild(b);
+  });
+  show("options");
+}
+
+/* Exactly one of the three control states is ever visible. */
+function show(which) {
+  ["options", "why", "pending"].forEach(function (id) {
+    el(id).hidden = (id !== which);
+  });
+}
+
+function hideControls() {
+  ["options", "why", "pending"].forEach(function (id) { el(id).hidden = true; });
+}
+
+/* ------------------------------------------------------------------- the loop */
+
+function chooseOption(label) {
+  state.chosen = label;
+  /* Their action becomes part of the story they can re-read. */
+  para("You: " + label, "chose");
+  el("nel-stage").textContent = NEL_PROMPT.stage;
+  el("nel-question").textContent = "“" + NEL_PROMPT.question + "”";
+  el("reason").placeholder = NEL_PROMPT.placeholder;
+  el("reason").value = "";
+  show("why");
+  el("reason").focus();
+}
+
+el("why").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  if (state.inFlight) return;
+  submitReason(el("reason").value);
+});
+
+async function submitReason(reason) {
+  state.inFlight = true;
+  /* Disable the input, do not remove it — a half-typed sentence vanishing is
+     worse than a wait. */
+  el("reason").disabled = true;
+  el("send").disabled = true;
+  el("pending").textContent = "Nel waits.";
+  show("pending");
+
+  var out;
+  try {
+    var res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scene_id: state.sceneId,
+        chosen_option: state.chosen,
+        player_reason: reason
+      })
+    });
+    out = await res.json();
+  } catch (err) {
+    out = null;   /* the network, not the player's problem */
+  }
+
+  var bucket = (out && out.bucket) || "GENERIC";
+  var narration = (out && out.narration) || OFFLINE_NARRATION;
+
+  el("reason").disabled = false;
+  el("send").disabled = false;
+  state.inFlight = false;
+
+  advance(bucket, narration);
+}
+
+function advance(bucket, narration) {
+  para(narration, "narration");
+
+  var scene = SCENES[state.sceneId];
+
+  /* Beat 2 ends the encounter. */
+  if (scene.beat === 2) {
+    if (scene.ending) para(scene.ending, "ending");
+    hideControls();
+    el("reason").blur();
+    return;
+  }
+
+  /* Beat 1 branches on the bucket. The player is never told which. */
+  var nextId = scene.next[bucket] || scene.next.GENERIC;
+  var next = SCENES[nextId];
+  if (!next) { hideControls(); return; }
+
+  state.sceneId = nextId;
+  state.chosen = null;
+  renderScene(next);
+  renderOptions(next);
+}
+
+/* ------------------------------------------------------------------- start */
+
+el("goal-role").textContent = GOAL.role;
+el("goal-tonight").textContent = GOAL.tonight;
+
+var first = SCENES[state.sceneId];
+renderScene(first);
+renderOptions(first);
+</script>
+</body>
+</html>
