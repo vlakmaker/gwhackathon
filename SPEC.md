@@ -79,7 +79,8 @@ comprehension costume.
 | Refuse | "his boots are dry, he wasn't in the marsh" | `INTEGRATED` |
 | Go with him | "his boots are dry, I want to see where he really goes" | `INTEGRATED` |
 | Refuse | "he's acting weird" | `PARTIAL` |
-| Either | "i dunno" / "he looks like a bad guy" | `GENERIC` |
+| Either | "i dunno" / "it felt right" | `GENERIC` |
+| Refuse | "he looks like a bad guy" | `PARTIAL` — a view, just an unevidenced one |
 | Go with him | "he came all the way through the mud, he needs help" | `CONTRADICTED` |
 
 The last one is the useful failure. They didn't misjudge Dorin, they misread
@@ -159,8 +160,8 @@ the model, branch with code.
 | Bucket | Meaning | Story response |
 |---|---|---|
 | `INTEGRATED` | The reason connects two details from different parts of the text. Either choice qualifies. | Reward it. Dorin's story breaks. New information opens up. |
-| `PARTIAL` | One detail cited, or a feeling with no evidence. "He's acting weird." | Second chance, nudged from inside the fiction. Nel points at the unused detail without explaining it. |
-| `GENERIC` | No engagement with the text at all. "I dunno." "He looks like a bad guy." | Bland response. Reveal nothing. This is the anti-gaming rule. |
+| `PARTIAL` | One detail cited and nothing drawn from it — even the key detail, since noticing is not inferring — or a judgement with no evidence. "He's acting weird." "He looks like a bad guy." | Second chance, nudged from inside the fiction. Nel points at the unused detail without explaining it. |
+| `GENERIC` | No view at all. "I dunno." "It felt right." Empty. | Bland response. Reveal nothing. This is the anti-gaming rule. |
 | `CONTRADICTED` | The reason asserts something the text denies. "He came through the mud." | Show the consequence. Do not correct them. |
 
 **Two hard constraints on every response:**
@@ -224,16 +225,41 @@ Classify the REASON into exactly one bucket. Never classify the chosen action.
 Either action can be paired with any bucket. A player who goes with Dorin
 BECAUSE they spotted he is lying has understood the text perfectly.
 
-INTEGRATED  - the reason connects two details from different parts of the
-              text, or states what they imply together. They do not need to
-              use the word "because" or explain fully. Naming both details is
-              enough.
-PARTIAL     - the reason cites one detail only, or expresses suspicion with no
-              textual evidence. "He's acting weird" is PARTIAL.
-GENERIC     - the reason engages nothing in the text. "I dunno." "He's a bad
-              guy." "It felt right." Empty or one word is GENERIC.
+INTEGRATED  - the reason uses the text to reach the hidden inference above.
+              Any one of these is enough on its own:
+                - it names both supporting details;
+                - it names one detail and says what it implies;
+                - it states the hidden inference in their own words.
+              They do not need the word "because", do not need both details,
+              and do not need to explain fully. Brief is fine. Curiosity alone
+              is not enough: wanting to see what happens, with nothing from
+              the text behind it, is not INTEGRATED.
+PARTIAL     - the reason engaged with the scene but did not get there. Naming
+              one detail and drawing nothing from it is PARTIAL, even when it
+              is the most important detail in the scene: noticing is not
+              inferring. Judging Dorin with no evidence is also PARTIAL:
+              "he's acting weird", "I don't trust him", "he's a bad guy". A
+              reason that reaches the hidden inference is never PARTIAL,
+              however few words it uses.
+GENERIC     - the reason expresses no view at all. "I dunno." "It felt
+              right." "No reason." A single word, or empty. There is nothing
+              in it to work with: not a detail, not a judgement, nothing.
 CONTRADICTED- the reason asserts something the text denies, or takes a claim
               at face value that the text undercuts.
+
+Work through these in order and stop at the first one that fits. The order is
+the rule; do not weigh the four descriptions above against each other.
+
+1. Does the reason express no view whatsoever — "I dunno", "it felt right",
+   "no reason", a single word, empty? Then GENERIC. This is the only route to
+   GENERIC: a reason that judges Dorin, however baselessly, is not GENERIC.
+2. Does it state something the text denies, or repeat one of Dorin's own
+   claims as if it were established? Then CONTRADICTED.
+3. Does it name both supporting details, or name one and say what it implies,
+   or state the hidden inference? Then INTEGRATED. Naming a detail on its own
+   is not enough — that is noticing, not inferring.
+4. Otherwise PARTIAL. This is the default for anyone who engaged and did not
+   get all the way there.
 
 Then narrate 2 to 4 sentences of second-person story that follows from the
 action they chose.
@@ -243,6 +269,9 @@ RULES FOR THE NARRATION:
 - Never restate or explain the hidden inference.
 - Always honour the action they chose, whatever the bucket. If they said go,
   they go.
+- Another beat follows this one. End on the moment, not after it: they may
+  stand, agree, or move towards the door, but do not complete the journey,
+  skip ahead in time, or end the night.
 - INTEGRATED: the world rewards it. Something opens up.
 - PARTIAL: Nel draws attention to an unused detail, without explaining why it
   matters. No praise, no hint phrasing.

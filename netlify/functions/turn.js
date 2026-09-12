@@ -18,12 +18,24 @@
 
 const { SCENES } = require("../../public/scenes.js");
 
-/* Swap either in one edit. Ids verified against openrouter.ai/api/v1/models.
- * Primary is the one that has to get the subtle case right: "go with him,
- * because his boots are dry" is INTEGRATED, and a weaker model reads the
- * chosen action instead of the reason. Fallback is chosen for speed. */
+/* Swap either in one edit. Both measured with bench.js, 9 cases x 3 runs.
+ *
+ *   sonnet-5    27/27   1390ms   $5.25 / 1000 turns
+ *   llama-3.3   24/27    564ms   $0.14
+ *   gemini-flash 24/27   505ms   $0.52
+ *   haiku-4.5   24/27    746ms   $1.69
+ *
+ * Sonnet stays primary on accuracy, not on instinct: the three cheaper models
+ * all miss the same case, reading a bare "his boots are dry" as INTEGRATED
+ * when it is PARTIAL — noticing the detail is not yet inferring from it, and
+ * over-rewarding that is the one failure this whole design is against. Cost is
+ * not the deciding factor at demo volume; 1000 turns is five dollars.
+ *
+ * gemini-flash is the fallback because it beats haiku outright: same accuracy,
+ * 240ms faster, a third of the price. The fallback only runs after the primary
+ * has already failed, so speed is what matters there. */
 const MODEL          = "anthropic/claude-sonnet-5";
-const FALLBACK_MODEL = "anthropic/claude-haiku-4.5";
+const FALLBACK_MODEL = "google/gemini-2.5-flash";
 
 const ENDPOINT   = "https://openrouter.ai/api/v1/chat/completions";
 const TIMEOUT_MS = 20000;
@@ -63,16 +75,41 @@ Classify the REASON into exactly one bucket. Never classify the chosen action.
 Either action can be paired with any bucket. A player who goes with Dorin
 BECAUSE they spotted he is lying has understood the text perfectly.
 
-INTEGRATED  - the reason connects two details from different parts of the
-              text, or states what they imply together. They do not need to
-              use the word "because" or explain fully. Naming both details is
-              enough.
-PARTIAL     - the reason cites one detail only, or expresses suspicion with no
-              textual evidence. "He's acting weird" is PARTIAL.
-GENERIC     - the reason engages nothing in the text. "I dunno." "He's a bad
-              guy." "It felt right." Empty or one word is GENERIC.
+INTEGRATED  - the reason uses the text to reach the hidden inference above.
+              Any one of these is enough on its own:
+                - it names both supporting details;
+                - it names one detail and says what it implies;
+                - it states the hidden inference in their own words.
+              They do not need the word "because", do not need both details,
+              and do not need to explain fully. Brief is fine. Curiosity alone
+              is not enough: wanting to see what happens, with nothing from
+              the text behind it, is not INTEGRATED.
+PARTIAL     - the reason engaged with the scene but did not get there. Naming
+              one detail and drawing nothing from it is PARTIAL, even when it
+              is the most important detail in the scene: noticing is not
+              inferring. Judging Dorin with no evidence is also PARTIAL:
+              "he's acting weird", "I don't trust him", "he's a bad guy". A
+              reason that reaches the hidden inference is never PARTIAL,
+              however few words it uses.
+GENERIC     - the reason expresses no view at all. "I dunno." "It felt
+              right." "No reason." A single word, or empty. There is nothing
+              in it to work with: not a detail, not a judgement, nothing.
 CONTRADICTED- the reason asserts something the text denies, or takes a claim
               at face value that the text undercuts.
+
+Work through these in order and stop at the first one that fits. The order is
+the rule; do not weigh the four descriptions above against each other.
+
+1. Does the reason express no view whatsoever — "I dunno", "it felt right",
+   "no reason", a single word, empty? Then GENERIC. This is the only route to
+   GENERIC: a reason that judges Dorin, however baselessly, is not GENERIC.
+2. Does it state something the text denies, or repeat one of Dorin's own
+   claims as if it were established? Then CONTRADICTED.
+3. Does it name both supporting details, or name one and say what it implies,
+   or state the hidden inference? Then INTEGRATED. Naming a detail on its own
+   is not enough — that is noticing, not inferring.
+4. Otherwise PARTIAL. This is the default for anyone who engaged and did not
+   get all the way there.
 
 Then narrate 2 to 4 sentences of second-person story that follows from the
 action they chose.
@@ -82,6 +119,9 @@ RULES FOR THE NARRATION:
 - Never restate or explain the hidden inference.
 - Always honour the action they chose, whatever the bucket. If they said go,
   they go.
+- Another beat follows this one. End on the moment, not after it: they may
+  stand, agree, or move towards the door, but do not complete the journey,
+  skip ahead in time, or end the night.
 - INTEGRATED: the world rewards it. Something opens up.
 - PARTIAL: Nel draws attention to an unused detail, without explaining why it
   matters. No praise, no hint phrasing.
@@ -156,7 +196,7 @@ async function callModel(model, prompt, apiKey, referer) {
         model,
         /* Asked for, never relied on — extractJSON runs regardless. */
         response_format: { type: "json_object" },
-        temperature: 0.7,
+        temperature: 0.2,
         max_tokens: 400,
         messages: [
           { role: "system", content: prompt },
@@ -249,7 +289,10 @@ exports.handler = async (event) => {
   return reply(200, { bucket, narration });
 };
 
-/* check.js reaches in for these rather than duplicating them. */
+/* check.js and bench.js reach in for these rather than duplicating them.
+ * buildPrompt especially: a benchmark against a copy of the prompt measures
+ * the copy. */
+module.exports.buildPrompt = buildPrompt;
 module.exports.extractJSON = extractJSON;
 module.exports.normaliseBucket = normaliseBucket;
 module.exports.MODEL = MODEL;

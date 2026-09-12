@@ -113,6 +113,7 @@ test("the prompt keeps the instruction that makes this measure reading", async (
   assert.ok(prompt.includes("Either action can be paired with any bucket."));
   assert.ok(prompt.includes("Never say correct, incorrect, right, wrong, well done, or good thinking."));
   assert.ok(prompt.includes("Never restate or explain the hidden inference."));
+  assert.ok(prompt.includes("Another beat follows this one."));
 });
 
 test("json_object is requested even though the parse does not rely on it", async () => {

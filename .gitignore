@@ -1,3 +1,6 @@
 
 .hitl/active-packet
 .env
+
+# Local Netlify folder
+.netlify

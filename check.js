@@ -13,6 +13,11 @@
 "use strict";
 
 const BASE = process.env.CHECK_BASE || "http://localhost:8888";
+/* The classifier is stochastic. One green run is not evidence — row 2 passed
+   10/10 once and turned out to hold only ~25% of the time. --runs=N runs every
+   row N times and a row passes only if every run agrees. */
+const RUNS = Math.max(1, parseInt(
+  (process.argv.find((a) => a.startsWith("--runs=")) || "--runs=1").slice(7), 10) || 1);
 const URL_ = BASE.replace(/\/$/, "") + "/.netlify/functions/turn";
 
 const C = process.stdout.isTTY
@@ -107,6 +112,34 @@ async function turn(scene_id, chosen_option, player_reason) {
 
 const clip = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 
+/* Run one case RUNS times. Returns the tally, the worst reply seen, and one
+   narration to print. */
+async function repeat(scene, option, reason) {
+  const tally = {}; let degraded = null, narration = null, ms = 0;
+  for (let i = 0; i < RUNS; i++) {
+    const out = await turn(scene, option, reason);
+    const k = out.degraded ? "(degraded)" : String(out.bucket);
+    tally[k] = (tally[k] || 0) + 1;
+    ms += out.ms;
+    if (out.degraded) degraded = out.degraded;
+    if (!narration && out.narration) narration = out.narration;
+  }
+  return { tally, degraded, narration, ms: Math.round(ms / RUNS) };
+}
+
+function rate(tally, want) {
+  const hit = tally[want] || 0;
+  const n = Object.values(tally).reduce((a, b) => a + b, 0);
+  return { hit, n, all: hit === n };
+}
+
+function spread(tally, want) {
+  return Object.entries(tally)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => (k === want ? k : C.r + k + C.o) + "\u00d7" + v)
+    .join(" ");
+}
+
 function report(label, want, got, out, why) {
   /* A degraded reply means the call itself failed. That is not a
      misclassification and tuning the prompt will not fix it. */
@@ -131,7 +164,8 @@ function show(option, reason, narration) {
 /* -------------------------------------------------------------------- main */
 
 (async () => {
-  console.log(`\n${C.b}Acceptance criteria — SPEC.md${C.o}  ${C.d}${URL_}${C.o}\n`);
+  console.log(`\n${C.b}Acceptance criteria — SPEC.md${C.o}  ${C.d}${URL_}${C.o}`);
+  console.log(`${C.d}${RUNS} run(s) per row; a row passes only if every run agrees.${C.o}\n`);
 
   const narrations = [];
   let pass = 0, fail = 0, errored = 0;
@@ -140,34 +174,41 @@ function show(option, reason, narration) {
   const ordered = [...CASES].sort((a, b) => (b.first ? 1 : 0) - (a.first ? 1 : 0));
 
   for (const c of ordered) {
-    const out = await turn(c.scene, c.option, c.reason);
-    const r = report(c.row, c.expect, out.bucket, out, c.why);
-    if (out.narration) narrations.push({ row: c.row, text: out.narration });
-
+    const out = await repeat(c.scene, c.option, c.reason);
+    const r = rate(out.tally, c.expect);
+    const bad = !!out.degraded;
+    const tag = bad ? `${C.y}ERROR${C.o}` : r.all ? `${C.g}PASS ${C.o}` : `${C.r}FAIL ${C.o}`;
+    console.log(`${tag} row ${c.row.padEnd(3)} want=${c.expect.padEnd(12)} ${r.hit}/${r.n}  ${spread(out.tally, c.expect)}  ${C.d}~${out.ms}ms${C.o}`);
+    if (c.why) console.log(`      ${C.d}${c.why}${C.o}`);
+    if (bad) console.log(`      ${C.y}call degraded: ${out.degraded} — not a prompt problem${C.o}`);
     /* Row 3 is explicit that PARTIAL must not be graded up to INTEGRATED. */
-    if (c.reject && out.bucket === c.reject) {
-      console.log(`      ${C.r}graded up to ${c.reject} — this is the anti-gaming rule failing${C.o}`);
+    if (c.reject && out.tally[c.reject]) {
+      console.log(`      ${C.r}graded up to ${c.reject} ${out.tally[c.reject]}/${r.n} — the anti-gaming rule failing${C.o}`);
     }
+    if (out.narration) narrations.push({ row: c.row, text: out.narration });
     show(c.option, c.reason, out.narration);
-    r.bad ? errored++ : r.pass ? pass++ : (fail++, failedRows.push(c.row));
+    bad ? errored++ : r.all ? pass++ : (fail++, failedRows.push(c.row));
   }
 
   /* --- row 7, two turns --- */
   const { SCENES } = require("./public/scenes.js");
-  const a = await turn(ROW7.beat1.scene, ROW7.beat1.option, ROW7.beat1.reason);
-  const okA = a.bucket === ROW7.beat1.expect;
-  console.log(`${okA ? C.g + "PASS " : C.r + "FAIL "}${C.o}row 7a  want=${ROW7.beat1.expect.padEnd(12)} got=${String(a.bucket).padEnd(12)} ${C.d}${a.ms}ms${C.o}`);
+  const a = await repeat(ROW7.beat1.scene, ROW7.beat1.option, ROW7.beat1.reason);
+  const rA = rate(a.tally, ROW7.beat1.expect);
+  const okA = rA.all;
+  console.log(`${okA ? C.g + "PASS " : C.r + "FAIL "}${C.o}row 7a  want=${ROW7.beat1.expect.padEnd(12)} ${rA.hit}/${rA.n}  ${spread(a.tally, ROW7.beat1.expect)}  ${C.d}~${a.ms}ms${C.o}`);
   console.log(`      ${C.d}${ROW7.why}${C.o}`);
   show(ROW7.beat1.option, ROW7.beat1.reason, a.narration);
   if (a.narration) narrations.push({ row: "7a", text: a.narration });
 
-  const branch = SCENES[INN].next[a.bucket] || SCENES[INN].next.PARTIAL;
-  const b = await turn(branch, ROW7.beat2.option, ROW7.beat2.reason);
-  const r7 = report("7b", ROW7.beat2.expect, b.bucket, b, `beat 2 in "${branch}" — a PARTIAL can still reach INTEGRATED`);
+  const branch = SCENES[INN].next[ROW7.beat1.expect];
+  const b = await repeat(branch, ROW7.beat2.option, ROW7.beat2.reason);
+  const rB = rate(b.tally, ROW7.beat2.expect);
+  const badB = !!b.degraded;
+  console.log(`${badB ? C.y + "ERROR" : rB.all ? C.g + "PASS " : C.r + "FAIL "}${C.o}row 7b  want=${ROW7.beat2.expect.padEnd(12)} ${rB.hit}/${rB.n}  ${spread(b.tally, ROW7.beat2.expect)}  ${C.d}~${b.ms}ms${C.o}`);
+  console.log(`      ${C.d}beat 2 in "${branch}" — a PARTIAL can still reach INTEGRATED${C.o}`);
   show(ROW7.beat2.option, ROW7.beat2.reason, b.narration);
   if (b.narration) narrations.push({ row: "7b", text: b.narration });
-  const row7ok = okA && r7.pass;
-  r7.bad ? errored++ : row7ok ? pass++ : (fail++, failedRows.push("7"));
+  badB ? errored++ : (okA && rB.all) ? pass++ : (fail++, failedRows.push("7"));
 
   /* --- row 8, across everything this run produced --- */
   const verdicts = narrations.filter((n) => VERDICT.test(n.text));
