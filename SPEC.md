@@ -276,8 +276,11 @@ RULES FOR THE NARRATION:
   story. Nothing follows it, so do not set up what happens next or hint at a
   scene to come. End on the moment they are in."]
 - INTEGRATED: the world rewards it. Something opens up.
-- PARTIAL: Nel draws attention to an unused detail, without explaining why it
-  matters. No praise, no hint phrasing.
+- PARTIAL: Nel draws attention to a detail the player did NOT mention, without
+  explaining why it matters. Never point at something their reason already
+  named — they have that one, and pointing at it again tells them nothing. If
+  they named one of the two supporting details, point at the other. If they
+  named both, point at neither. No praise, no hint phrasing.
 - GENERIC: respond flatly. Reveal nothing new. The scene does not advance.
 - CONTRADICTED: show the consequence happening. Do not warn, do not correct.
 - Short sentences. Plain words. Present tense. Second person.

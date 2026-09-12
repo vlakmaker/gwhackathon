@@ -305,3 +305,53 @@ test("the worst-case wait is bounded well under half a minute", async () => {
   const worst = 2 * parseInt(m[1], 10);
   assert.ok(worst <= 20000, `worst case is ${worst / 1000}s — too long for a twelve year old`);
 });
+
+/* Found in a live playtest: a narration that died mid-word on screen —
+ * "not noticing you've gone qui". The primary model reasons before answering
+ * and those tokens count against max_tokens, so a long reasoning pass left too
+ * little budget for the story. A cut-off sentence is the one visible bug a
+ * player remembers, so it counts as the call failing. */
+const cut = (content) => ({
+  ok: true, status: 200,
+  json: async () => ({ choices: [{ message: { content }, finish_reason: "length" }] })
+});
+
+test("a truncated reply never reaches the player", async () => {
+  stubFetch(() => cut('{"bucket":"PARTIAL","narration":"Dorin keeps talking, not noticing you have gone qui'),
+            () => ok(GOOD));
+  const res = await post(turnBody());
+  assert.equal(calls.length, 2, "truncation should trigger the retry");
+  assert.equal(calls[1].body.model, FALLBACK_MODEL);
+  const b = JSON.parse(res.body);
+  assert.equal(b.bucket, "INTEGRATED");
+  assert.ok(!/gone qui$/.test(b.narration), "the truncated text was shipped");
+});
+
+test("a reply truncated on both models degrades rather than shipping half a sentence", async () => {
+  stubFetch(() => cut('{"bucket":"PARTIAL","narration":"she looks at the b'));
+  const res = await post(turnBody());
+  const b = JSON.parse(res.body);
+  assert.equal(res.statusCode, 200);
+  assert.equal(b.bucket, "GENERIC");
+  assert.ok(!/looks at the b$/.test(b.narration), "half a sentence reached the player");
+  assert.ok(/\.$|\!$|\?$/.test(b.narration.trim()), "the fallback narration is not a whole sentence");
+});
+
+test("the token ceiling leaves room for the model to reason first", async () => {
+  stubFetch(() => ok(GOOD));
+  await post(turnBody());
+  /* a measured call spent 124 tokens reasoning before writing anything */
+  assert.ok(calls[0].body.max_tokens >= 1000,
+    `max_tokens is ${calls[0].body.max_tokens}; reasoning tokens count against it`);
+});
+
+/* Nel pointed at the boots on a turn where the player had just named the boots.
+ * The prompt said "unused detail" and the model read past it. */
+test("the nudge rule forbids pointing at what the player already named", async () => {
+  stubFetch(() => ok(GOOD));
+  await post(turnBody());
+  const p = calls[0].body.messages[0].content;
+  assert.ok(p.includes("Never point at something their reason already"),
+    "the prompt does not forbid re-pointing at a named detail");
+  assert.ok(p.includes("point at the other"), "the prompt does not say to point at the unused one");
+});

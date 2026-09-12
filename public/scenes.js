@@ -25,7 +25,13 @@
 
 var GOAL = {
   role: "You are a Finder. People pay you to bring back what is lost.",
-  tonight: "Tonight: the baker's daughter. You have until the rain starts."
+  /* The fee is in the always-visible line on purpose. SPEC: "Without this the
+   * player has no reason to care about anything in the scene." A Finder works
+   * for money, and until this was here "Go with him" had no upside at all —
+   * which quietly damaged the measurement, because the row the whole design
+   * rests on is INTEGRATED paired with going. Both options have to be live. */
+  tonight: "Tonight: the baker's daughter. He is paying well, and you have " +
+           "until the rain starts."
 };
 
 /* Nel asks in the fiction. Never "explain your reasoning". */
@@ -83,7 +89,8 @@ var SCENES = {
       "facing him.\n\n" +
       "Dorin's boots are by the fire, drying. They are grey with dust.\n\n" +
       "He says he will take you to the camp himself, if you go now, before the " +
-      "rain. Outside, the sky has gone the colour of a bruise.\n\n" +
+      "rain. Whoever brings her home is getting paid tonight. Outside, the sky " +
+      "has gone the colour of a bruise.\n\n" +
       "Dorin is waiting. Do you go with him?",
 
     inference:

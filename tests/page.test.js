@@ -205,3 +205,14 @@ test("a rate-limited turn does not advance the story", () => {
   assert.ok(/\breturn;/.test(block), "the refusal branch falls through to advance()");
   assert.ok(!/advance\(/.test(block), "a refusal reaches advance()");
 });
+
+/* "The job is over" landed flat on top of the real ending and took the sting
+ * out of it. The ending is the ending. */
+test("nothing is printed after the ending", () => {
+  /* Only what a player can see — the comment explaining the removal names the
+     line it removed, and tripped this test on the first attempt. */
+  const visible = html.replace(/<!--[\s\S]*?-->/g, "");
+  assert.ok(!/The job is over/.test(visible), "a flat closing line follows the ending");
+  assert.ok(!visible.includes('id="done-note"'), "the done block still prints a line");
+  assert.ok(visible.includes('id="again"'), "the restart control went with it");
+});

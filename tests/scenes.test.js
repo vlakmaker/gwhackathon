@@ -115,10 +115,18 @@ test("no shipped prose delivers a verdict", () => {
 });
 
 /* The goal line is what gives a twelve year old a reason to investigate. */
-test("the goal line states a role and a clock", () => {
+test("the goal line states a role, a clock, and a reason to bother", () => {
   assert.match(GOAL.role, /\S/);
   assert.match(GOAL.tonight, /\S/);
   assert.match(GOAL.tonight, /rain/i, "the deadline should be visible in the goal line");
+  /* A Finder works for money. Without the fee, "Go with him" has no upside and
+     the INTEGRATED-paired-with-going case stops being a natural answer. */
+  assert.match(GOAL.tonight, /pay|paid|money/i, "no reason to take the job");
+});
+
+test("the scene makes the offer worth taking", () => {
+  assert.match(SCENES[FIRST_SCENE].scene_text, /paid|paying|money/i,
+    "going with him has no upside, so it reads as the stupid option");
 });
 
 /* "Explain your reasoning" is a worksheet. A character asking why is a

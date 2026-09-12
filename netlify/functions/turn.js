@@ -138,8 +138,11 @@ RULES FOR THE NARRATION:
   they go.
 ${CONTINUITY[scene.beat === 2 ? 2 : 1]}
 - INTEGRATED: the world rewards it. Something opens up.
-- PARTIAL: Nel draws attention to an unused detail, without explaining why it
-  matters. No praise, no hint phrasing.
+- PARTIAL: Nel draws attention to a detail the player did NOT mention, without
+  explaining why it matters. Never point at something their reason already
+  named — they have that one, and pointing at it again tells them nothing. If
+  they named one of the two supporting details, point at the other. If they
+  named both, point at neither. No praise, no hint phrasing.
 - GENERIC: respond flatly. Reveal nothing new. The scene does not advance.
 - CONTRADICTED: show the consequence happening. Do not warn, do not correct.
 - Short sentences. Plain words. Present tense. Second person.
@@ -231,7 +234,12 @@ async function callModel(model, prompt, apiKey, referer) {
         /* Asked for, never relied on — extractJSON runs regardless. */
         response_format: { type: "json_object" },
         temperature: 0.2,
-        max_tokens: 400,
+        /* The primary model reasons before answering and those tokens count
+         * against this ceiling — a measured call spent 124 of them before
+         * writing a word. At 400 a long reasoning pass left too little for the
+         * narration and it died mid-word on screen. Generous, and it costs
+         * nothing extra: only tokens actually generated are billed. */
+        max_tokens: 1500,
         messages: [
           { role: "system", content: prompt },
           { role: "user",   content: "Return only JSON." }
@@ -244,9 +252,11 @@ async function callModel(model, prompt, apiKey, referer) {
       return { ok: false, why: `upstream ${res.status}` };
     }
     const data = await res.json();
-    const text = data && data.choices && data.choices[0] &&
-                 data.choices[0].message && data.choices[0].message.content;
-    return { ok: true, text };
+    const choice = data && data.choices && data.choices[0];
+    const text = choice && choice.message && choice.message.content;
+    /* "length" means the reply was cut off. A sentence dying mid-word is the one
+     * visible bug a player remembers, so this counts as the call failing. */
+    return { ok: true, text, truncated: choice && choice.finish_reason === "length" };
   } catch (err) {
     return { ok: false, why: err && err.name === "AbortError" ? "timeout" : "network" };
   } finally {
@@ -365,7 +375,7 @@ exports.handler = async (event) => {
 
   /* Read a reply into a bucket + narration, or nothing. */
   const understand = (out) => {
-    if (!out.ok) return null;
+    if (!out.ok || out.truncated) return null;
     const parsed = extractJSON(out.text);
     const bucket = parsed && normaliseBucket(parsed.bucket);
     const narration = parsed && cleanNarration(parsed.narration);
@@ -380,7 +390,7 @@ exports.handler = async (event) => {
    * three are the call failing, and a flat fallback narration mid-scene costs
    * the player more than one extra second does. Still never a third call. */
   if (!got) {
-    console.error(`turn: retrying, primary ${out.ok ? "unreadable" : out.why} scene=${scene_id}`);
+    console.error(`turn: retrying, primary ${out.truncated ? "truncated" : out.ok ? "unreadable" : out.why} scene=${scene_id}`);
     used = FALLBACK_MODEL;
     out  = await callModel(FALLBACK_MODEL, prompt, apiKey, referer);
     got  = understand(out);
