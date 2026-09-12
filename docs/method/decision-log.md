@@ -210,7 +210,43 @@ cannot find.
 
 Things blocked on someone else. Each one is a reason a slice cannot start.
 
-### 2026-09-12 — Server-held key or bring-your-own-key for the public deploy?
+### 2026-09-12 — BYOK, after the hackathon
+
+**Blocks:** nothing now. Recorded so it is not re-decided from scratch.
+**Asked:** decided 2026-09-12 — server key with an abuse ceiling for the demo,
+BYOK added afterwards as an escape hatch so the public repo stays usable.
+**Status:** phase one shipped. Phase two open, and it needs two things this
+build deliberately does not have: somewhere to hold a visitor's key across
+turns, which AGENTS.md and SPEC both forbid storing, and a way to keep the
+demo playable cold for someone who has no key. The likely shape is a server
+key by default and BYOK only once the ceiling is hit.
+
+### 2026-09-12 — Server-held key, with an abuse ceiling (supersedes the question below)
+
+**Decision:** The key stays in Netlify's environment. A per-visitor and
+per-container ceiling lives in the function; BYOK is deferred.
+**Reason:** BYOK protects the wallet but puts a wall exactly where the proof is
+supposed to happen. SPEC's Demo section says hand it to someone who has never
+seen it and let them type; no judge will paste an OpenRouter key to try a
+reading game, and a twelve year old never has one. It also inverts the stated
+reason the function exists — "so the key never reaches the browser" — and
+holding a key across turns wants storage the rules forbid. Measured exposure on
+a server key is small: $5.25 per thousand turns, a whole playthrough is two
+calls, a hundred judges playing twice is about two dollars. Honest use is not
+the risk; one person looping the endpoint is, and a ceiling addresses that far
+more cheaply.
+**Impact:** 40 turns per visitor per ten minutes, 3000 per container. In memory,
+because there is no database and there will not be one — Netlify recycles
+containers, so a determined attacker gets a fresh budget each time one spins up.
+This raises the cost of abuse rather than making it impossible, which is the
+right trade for a four hour demo, and it is recorded here rather than pretended
+otherwise. Off under `netlify dev`, so check.js and bench.js are never
+throttled. A refused turn returns 429 with no bucket and no narration, and the
+page shows the reason without advancing the story: no classification happened,
+so charging the player a story consequence for a load problem would be a lie.
+No IP is ever logged.
+
+### 2026-09-12 — Server-held key or bring-your-own-key for the public deploy? — answered above
 
 **Blocks:** the deploy, and therefore the shareable link the brief asks for.
 **Asked:** 2026-09-12, of the author.

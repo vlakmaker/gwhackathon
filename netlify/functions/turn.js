@@ -244,6 +244,63 @@ async function callModel(model, prompt, apiKey, referer) {
   }
 }
 
+/* ------------------------------------------------------------- abuse ceiling
+ *
+ * A shareable link is part of the brief, and honest use is cheap: a whole
+ * playthrough is two calls, about a penny. The exposure is one person looping
+ * the endpoint, so that is the only thing guarded against.
+ *
+ * In-memory, because there is no database and there will not be one. Netlify
+ * recycles function containers, so a determined attacker gets a fresh budget
+ * each time one spins up — this raises the cost of abuse rather than making it
+ * impossible, which is the right trade for a four hour demo. Nothing is
+ * persisted and no IP is ever written to a log.
+ */
+const RATE_WINDOW_MS = 10 * 60 * 1000;   /* 10 minutes */
+const RATE_MAX       = 40;               /* turns per visitor per window */
+const TOTAL_MAX      = 3000;             /* turns per container, whatever happens */
+
+const hits = new Map();
+let totalTurns = 0;
+
+/* Off under `netlify dev`, so check.js and bench.js are not throttled. */
+const limiterOn = () =>
+  process.env.NETLIFY_DEV !== "true" && process.env.TURN_NO_LIMIT !== "1";
+
+function visitor(event) {
+  const h = event.headers || {};
+  const fwd = h["x-forwarded-for"] || "";
+  return h["x-nf-client-connection-ip"] || fwd.split(",")[0].trim() || "unknown";
+}
+
+/* Returns a reason string when the turn should be refused, else null. */
+function overLimit(event, now) {
+  if (!limiterOn()) return null;
+  if (totalTurns >= TOTAL_MAX) return "total";
+
+  const key = visitor(event);
+  const recent = (hits.get(key) || []).filter((t) => now - t < RATE_WINDOW_MS);
+  if (recent.length >= RATE_MAX) { hits.set(key, recent); return "visitor"; }
+
+  recent.push(now);
+  hits.set(key, recent);
+
+  /* Keep the map from growing without bound. */
+  if (hits.size > 5000) {
+    for (const [k, v] of hits) {
+      if (!v.some((t) => now - t < RATE_WINDOW_MS)) hits.delete(k);
+    }
+  }
+  return null;
+}
+
+/* Not a narration. No classification happened, so the story must not advance —
+ * inventing a GENERIC would charge the player a story consequence for a
+ * technical limit. */
+const LIMIT_MESSAGE =
+  "The demo has had a lot of visitors in the last few minutes. " +
+  "Give it a moment and tell Nel again.";
+
 /* ------------------------------------------------------------------ handler */
 
 const reply = (status, body) => ({
@@ -270,6 +327,14 @@ exports.handler = async (event) => {
 
   const scene = SCENES[scene_id];
   if (!scene) return reply(400, fallback("unknown scene_id"));
+
+  const limit = overLimit(event, Date.now());
+  if (limit) {
+    /* the reason, never the visitor */
+    console.error(`turn: refused, ${limit} limit reached`);
+    return reply(429, { limited: true, message: LIMIT_MESSAGE });
+  }
+  totalTurns++;
 
   /* Empty or one character is GENERIC by definition — don't spend a call.
    * Ahead of the key check on purpose: this acceptance case is then provable
@@ -326,6 +391,8 @@ exports.handler = async (event) => {
  * buildPrompt especially: a benchmark against a copy of the prompt measures
  * the copy. */
 module.exports.buildPrompt = buildPrompt;
+module.exports.RATE_MAX = RATE_MAX;
+module.exports.TOTAL_MAX = TOTAL_MAX;
 module.exports.extractJSON = extractJSON;
 module.exports.normaliseBucket = normaliseBucket;
 module.exports.MODEL = MODEL;

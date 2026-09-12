@@ -414,12 +414,22 @@ async function submitReason(reason) {
     out = null;   /* the network, not the player's problem */
   }
 
-  var bucket = (out && out.bucket) || "GENERIC";
-  var narration = (out && out.narration) || OFFLINE_NARRATION;
-
   el("reason").disabled = false;
   el("send").disabled = false;
   state.inFlight = false;
+
+  /* Refused for load, not judged. No classification happened, so the story must
+     not move — branching here would charge a story consequence for a technical
+     limit. Say so plainly and let them try the same answer again. */
+  if (out && out.limited) {
+    el("pending").textContent = out.message || "Busy. Try again in a moment.";
+    show("pending");
+    setTimeout(function () { if (!state.inFlight) show("why"); }, 6000);
+    return;
+  }
+
+  var bucket = (out && out.bucket) || "GENERIC";
+  var narration = (out && out.narration) || OFFLINE_NARRATION;
 
   advance(bucket, narration);
 }

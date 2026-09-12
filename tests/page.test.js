@@ -190,3 +190,18 @@ test("the input says how little is enough, without hinting what to say", () => {
   assert.ok(!/boot|mud|marsh|dry|lying|because/i.test(NEL_PROMPT.reassurance),
     "the reassurance leaks the inference");
 });
+
+/* A turn refused for load was not judged. Branching the story on it would
+   charge the player a story consequence for a technical limit. */
+test("a rate-limited turn does not advance the story", () => {
+  assert.match(html, /out\.limited/, "the page ignores a refusal");
+  /* Anchor on the whole branch, from the guard to where the normal path
+     resumes. A non-greedy brace match lands inside the setTimeout callback. */
+  const i = html.indexOf("if (out && out.limited)");
+  assert.ok(i > -1, "no handling for a refused turn");
+  const j = html.indexOf("var bucket =", i);
+  assert.ok(j > i, "the normal path does not follow the refusal branch");
+  const block = html.slice(i, j);
+  assert.ok(/\breturn;/.test(block), "the refusal branch falls through to advance()");
+  assert.ok(!/advance\(/.test(block), "a refusal reaches advance()");
+});
