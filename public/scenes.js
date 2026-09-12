@@ -148,16 +148,35 @@ var SCENES = {
 
     options: ["Go up to the pit", "Make him talk"],
 
+    /* The motive, not another clue about his boots. Why would a man who says he
+     * escaped an ambush offer to walk you back into it? Because the walk is the
+     * job: get whoever is capable out of Greyford and onto the wrong road. That
+     * is what makes his urgency and his offer make sense, and it is revealed as
+     * consequence — never as an explanation of the boots. */
+    /* You are a Finder. The goal line promises the baker's daughter, so an
+     * ending that stops at "you worked out he was lying" leaves the player
+     * holding the reading work and none of the reward. Every ending except the
+     * GENERIC pair now lands on where she is, or which way to look.
+     *
+     * It also makes the motive land with no explanation at all: he is a lure,
+     * and the moment you see through him his lie becomes the map. Spotting the
+     * boots is not how you avoid being tricked. It is how you find her. */
     endings: {
       "Go up to the pit":
-        "You go up the red road in the rain. Dorin does not come, and nobody " +
-        "makes him. You knew where you were going before anyone said the name " +
-        "of the place out loud, and that is why you get there first.",
+        "You take the red road instead of the one he offered. There is nobody " +
+        "at the pit \u2014 only a rope, and a print pressed into red clay. But from " +
+        "the top you can see the whole valley: the road Dorin wanted you on, " +
+        "running the other way out of Greyford, and below it, close enough to " +
+        "walk, the shed where the pit men used to keep their tools. There is a " +
+        "light in it. He was not taking you to her. He was walking you past her.",
       "Make him talk":
-        "You sit down across from him and wait. Dorin talks about the marsh " +
-        "for a while, and then he stops talking about the marsh. By the time " +
-        "the rain starts he has told you a second story, and this one has a " +
-        "place in it."
+        "You sit down across from him and wait. Dorin talks about the marsh for " +
+        "a while. Then he stops talking about the marsh, and starts talking " +
+        "about a man who paid him to walk into an inn and find somebody willing " +
+        "to leave it. He does not know where she is. He was never meant to \u2014 " +
+        "that was the whole point of him. But he knows which road he was told to " +
+        "come back down, and before the rain stops Nel has the name of the only " +
+        "building still standing at the end of it."
     }
   },
 
@@ -189,13 +208,22 @@ var SCENES = {
 
     endings: {
       "Go with him":
-        "You walk out with him into the first of the rain. You keep half a " +
-        "step behind him, and you watch the ground the whole way. Nel comes " +
-        "too, without being asked.",
+        "You walk out with him into the first of the rain. You keep half a step " +
+        "behind him and you watch the ground the whole way, and the ground keeps " +
+        "getting drier. An hour out, Greyford is a smudge of light behind you, " +
+        "and it occurs to you that every step has been away from it. So you " +
+        "stop. Dorin walks on a while before he notices. It takes you and Nel " +
+        "until almost morning, soaked through, but there is one shed on the high " +
+        "side of the town with a light in it that should not be there, and she " +
+        "is inside.",
       "Refuse":
-        "You stay by the fire. Dorin goes out alone, and the woman who runs " +
-        "the inn watches the door long after it has shut. Nel sits down beside " +
-        "you and says nothing, which from Nel is a kind of agreement."
+        "You stay by the fire. Dorin goes out alone and does not look back, and " +
+        "the woman who runs the inn watches the door long after it shuts. \"He " +
+        "asked which of you was the Finder,\" she says. \"Before he ever " +
+        "mentioned the girl.\" So you search Greyford instead of the road, every " +
+        "shed and every cellar, and it takes until the rain stops. She is behind " +
+        "the last door you try, on the high side of the town, a ten minute walk " +
+        "from the fire you were sitting at."
     }
   },
 
@@ -223,15 +251,21 @@ var SCENES = {
 
     options: ["Go with him", "Refuse"],
 
+    /* These two do NOT find her, deliberately. GENERIC is the anti-gaming rule:
+     * if "i dunno" still closes the loop, the measurement is decorative. The
+     * cost of not reading is shown rather than stated, and nobody is told they
+     * were wrong. */
     endings: {
       "Go with him":
-        "You go. The rain finds you before the road does. Dorin talks the " +
-        "whole way, and you learn nothing you did not already have in front of " +
-        "you in the inn.",
+        "You go. The rain finds you before the road does. Dorin talks the whole " +
+        "way, and you learn nothing you did not already have in front of you in " +
+        "the inn. Somewhere before dawn he is simply not there any more. Neither " +
+        "is the track. Neither is she.",
       "Refuse":
         "You stay. Dorin goes out into the rain alone and the door bangs twice " +
-        "behind him. Nel looks at you, waiting for a reason, and you do not " +
-        "have one for her yet."
+        "behind him. Nel looks at you, waiting for a reason, and you do not have " +
+        "one for her. In the morning the baker is still standing at the door of " +
+        "the inn, asking."
     }
   },
 
@@ -261,14 +295,20 @@ var SCENES = {
 
     endings: {
       "Keep walking":
-        "You keep walking. The road stays dry and pale under both of you, and " +
-        "Dorin keeps a good pace for a man who says he walked all night. " +
-        "Somewhere behind you the rain is falling on the marsh, where you are " +
-        "not.",
+        "You keep walking. Greyford goes down behind one hill, and then that " +
+        "hill goes down behind another. Dorin keeps a good pace for a man who " +
+        "says he walked all night, and he never once looks back to check the " +
+        "road. He does not need to. When the sun comes up he is gone, and you " +
+        "are a long way from anywhere, and every hour you walked was an hour in " +
+        "the wrong direction.",
       "Ask him where you are":
         "You stop in the middle of the dry road and ask him where you are. " +
-        "Dorin turns round. He looks at your boots, and then at his own, and " +
-        "for the first time tonight he has nothing to say."
+        "Dorin looks past you, back at the lights of Greyford, much smaller now " +
+        "than you expected them to be. \"Not far,\" he says, and it is the first " +
+        "thing tonight you are certain is a lie. So you turn round and walk " +
+        "back, and you watch the ground the whole way. Where the dry dust ends " +
+        "there is a track going up that Dorin did not take. She is at the top " +
+        "of it."
     }
   }
 };

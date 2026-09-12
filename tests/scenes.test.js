@@ -134,3 +134,61 @@ test("scene ids are url-safe and unique", () => {
   assert.equal(new Set(ids).size, ids.length);
   for (const id of ids) assert.match(id, /^[a-z0-9-]+$/, `${id} is not url-safe`);
 });
+
+/* The GENERIC branch is the anti-gaming rule: it must reveal nothing, so a
+ * player who types "i dunno" cannot buy the payoff. If the motive leaks into
+ * these endings, the whole measurement is decorative. */
+test("the GENERIC endings still reveal nothing", () => {
+  const g = SCENES[SCENES[FIRST_SCENE].next.GENERIC];
+  const reveals = /paid|sent him|never taking|away from her|which of you|the point of him|lure/i;
+  for (const [opt, e] of Object.entries(g.endings)) {
+    assert.ok(!reveals.test(e), `the GENERIC ending for "${opt}" gives away the motive`);
+  }
+});
+
+/* SPEC: on INTEGRATED "the world rewards it. Something opens up." The reward
+ * has to be new information, not a restatement of the clue they already found. */
+test("the INTEGRATED endings open something up without restating the clue", () => {
+  const q = SCENES[SCENES[FIRST_SCENE].next.INTEGRATED];
+  /* Dorin's motive: he is a lure, sent to walk a Finder out of town. */
+  const motive = /paid him|not taking you to her|walking you past her|the whole point of him|told to come back/i;
+  for (const [opt, e] of Object.entries(q.endings)) {
+    assert.ok(motive.test(e),
+      `the INTEGRATED ending for "${opt}" reveals no motive — it is just another clue`);
+    /* the boots/mud inference is theirs to keep, not ours to explain back */
+    assert.ok(!/\bboots? (are|were) dry\b|\bblack mud\b|\bnot marsh dirt\b/i.test(e),
+      `the INTEGRATED ending for "${opt}" explains the inference back to the player`);
+  }
+});
+
+/* The goal line promises the baker's daughter. An ending that stops at "you
+ * worked out he was lying" leaves the player holding all the reading work and
+ * none of the reward they were shown at the top of the screen.
+ *
+ * GENERIC is the exception and must stay one: if "i dunno" also closes the
+ * loop, the measurement is decorative. So is CONTRADICTED's "keep walking" —
+ * the player was shown the dry road twice and walked on anyway. */
+test("every path that earns it actually finds her", () => {
+  const closes = /\bshe is\b|\bis inside\b|\bat the top of it\b|\bwalking you past her\b|\bname of the only building\b/i;
+  const next = SCENES[FIRST_SCENE].next;
+
+  for (const bucket of ["INTEGRATED", "PARTIAL"]) {
+    const s = SCENES[next[bucket]];
+    for (const [opt, e] of Object.entries(s.endings)) {
+      assert.ok(closes.test(e),
+        `${bucket} / "${opt}" never finds her — the Finder does not find anything`);
+    }
+  }
+
+  const g = SCENES[next.GENERIC];
+  for (const [opt, e] of Object.entries(g.endings)) {
+    assert.ok(!closes.test(e),
+      `the GENERIC ending for "${opt}" finds her — that breaks the anti-gaming rule`);
+  }
+
+  const c = SCENES[next.CONTRADICTED];
+  assert.ok(!closes.test(c.endings["Keep walking"]),
+    "walking on past the dry road twice should not still find her");
+  assert.ok(closes.test(c.endings["Ask him where you are"]),
+    "turning round is the recovery and should find her");
+});

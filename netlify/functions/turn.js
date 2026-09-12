@@ -59,6 +59,18 @@ const fallback = (why) => ({ bucket: "GENERIC", narration: FALLBACK_NARRATION, d
 
 /* ------------------------------------------------------------------ prompt */
 
+/* One line of the prompt depends on the beat: promising "another beat follows"
+ * during beat 2 asks the model to set up a scene that will never come, and the
+ * fixed ending then lands on top of that setup. */
+const CONTINUITY = {
+  1: "- Another beat follows this one. End on the moment, not after it: they may\n" +
+     "  stand, agree, or move towards the door, but do not complete the journey,\n" +
+     "  skip ahead in time, or end the night.",
+  2: "- This is the last narration in the story. Nothing follows it, so do not set\n" +
+     "  up what happens next or hint at a scene to come. End on the moment they\n" +
+     "  are in."
+};
+
 /* SPEC.md § "The DM prompt", verbatim. Edit the spec, then edit this. */
 function buildPrompt(scene, chosen_option, player_reason) {
   return `You are the narrator of a text adventure for a twelve year old reader.
@@ -124,9 +136,7 @@ RULES FOR THE NARRATION:
 - Never restate or explain the hidden inference.
 - Always honour the action they chose, whatever the bucket. If they said go,
   they go.
-- Another beat follows this one. End on the moment, not after it: they may
-  stand, agree, or move towards the door, but do not complete the journey,
-  skip ahead in time, or end the night.
+${CONTINUITY[scene.beat === 2 ? 2 : 1]}
 - INTEGRATED: the world rewards it. Something opens up.
 - PARTIAL: Nel draws attention to an unused detail, without explaining why it
   matters. No praise, no hint phrasing.

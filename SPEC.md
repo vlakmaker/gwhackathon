@@ -272,6 +272,9 @@ RULES FOR THE NARRATION:
 - Another beat follows this one. End on the moment, not after it: they may
   stand, agree, or move towards the door, but do not complete the journey,
   skip ahead in time, or end the night.
+  [on beat 2 this line is replaced by: "This is the last narration in the
+  story. Nothing follows it, so do not set up what happens next or hint at a
+  scene to come. End on the moment they are in."]
 - INTEGRATED: the world rewards it. Something opens up.
 - PARTIAL: Nel draws attention to an unused detail, without explaining why it
   matters. No praise, no hint phrasing.
