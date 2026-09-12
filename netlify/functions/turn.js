@@ -159,7 +159,26 @@ function extractJSON(raw) {
       if (o && typeof o === "object" && !Array.isArray(o)) return o;
     } catch (_) { /* next shape */ }
   }
-  return null;
+  /* Last resort: pull the two fields out by hand. A narration is prose, so it
+   * arrives with the model's own quotation marks in it — one unescaped " or a
+   * raw newline and every JSON.parse above fails on output that is otherwise
+   * perfectly good. Seen in the wild on the primary model. */
+  return salvage(raw);
+}
+
+function salvage(raw) {
+  const bm = raw.match(/"bucket"\s*:\s*"?\s*([A-Za-z]+)/i);
+  let narration = null;
+  const ni = raw.search(/"narration"\s*:/i);
+  if (ni !== -1) {
+    let rest = raw.slice(ni).replace(/^"narration"\s*:\s*/i, "").replace(/^"/, "");
+    /* cut at the final quote, allowing for a trailing } and a closing fence */
+    const end = rest.search(/"\s*\}?\s*(?:```)?\s*$/);
+    rest = end === -1 ? rest : rest.slice(0, end);
+    narration = rest.replace(/\\"/g, '"').replace(/\\n/g, " ").trim();
+  }
+  if (!bm && !narration) return null;
+  return { bucket: bm ? bm[1] : null, narration };
 }
 
 /* "integrated", "INTEGRATED.", "Contradicted", "bucket: PARTIAL" all land. */
@@ -264,25 +283,34 @@ exports.handler = async (event) => {
   const prompt  = buildPrompt(scene, chosen_option, player_reason);
   const started = Date.now();
 
+  /* Read a reply into a bucket + narration, or nothing. */
+  const understand = (out) => {
+    if (!out.ok) return null;
+    const parsed = extractJSON(out.text);
+    const bucket = parsed && normaliseBucket(parsed.bucket);
+    const narration = parsed && cleanNarration(parsed.narration);
+    return bucket && narration ? { bucket, narration } : null;
+  };
+
   let used = MODEL;
   let out  = await callModel(MODEL, prompt, apiKey, referer);
-  if (!out.ok) {
+  let got  = understand(out);
+
+  /* Retry covers an unreadable reply as well as a non-2xx or a timeout: all
+   * three are the call failing, and a flat fallback narration mid-scene costs
+   * the player more than one extra second does. Still never a third call. */
+  if (!got) {
+    console.error(`turn: retrying, primary ${out.ok ? "unreadable" : out.why} scene=${scene_id}`);
     used = FALLBACK_MODEL;
     out  = await callModel(FALLBACK_MODEL, prompt, apiKey, referer);
-  }
-  if (!out.ok) {
-    console.error(`turn: both models failed (${out.why}) scene=${scene_id}`);
-    return reply(200, fallback(out.why));
+    got  = understand(out);
   }
 
-  const parsed = extractJSON(out.text);
-  const bucket = parsed && normaliseBucket(parsed.bucket);
-  const narration = parsed && cleanNarration(parsed.narration);
-
-  if (!bucket || !narration) {
-    console.error(`turn: unusable response from ${used} scene=${scene_id}`);
-    return reply(200, fallback("unparseable"));
+  if (!got) {
+    console.error(`turn: both models unusable scene=${scene_id}`);
+    return reply(200, fallback(out.ok ? "unparseable" : out.why));
   }
+  const { bucket, narration } = got;
 
   /* Bucket and timing only. Never the reason, never the key. */
   console.log(`turn scene=${scene_id} model=${used} bucket=${bucket} ms=${Date.now() - started}`);

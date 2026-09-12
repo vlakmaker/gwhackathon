@@ -75,3 +75,53 @@ test("an ambiguous answer naming two buckets is null", () => {
   assert.equal(normaliseBucket("INTEGRATED or PARTIAL"), null);
   assert.equal(normaliseBucket("somewhere between GENERIC and PARTIAL"), null);
 });
+
+/* --- what actually broke in a real play session -------------------------- *
+ * A narration is prose, so the model writes dialogue in it. One unescaped
+ * quotation mark and every JSON.parse strategy above fails on output that is
+ * otherwise perfectly usable. The player saw the flat fallback mid-scene.
+ */
+
+test("unescaped quotes inside the narration are salvaged", () => {
+  const raw = '{"bucket": "PARTIAL", "narration": "Dorin looks down. "Clean?" he says. "The wind dried them.""}';
+  const o = extractJSON(raw);
+  assert.ok(o, "should not give up on this");
+  assert.equal(normaliseBucket(o.bucket), "PARTIAL");
+  assert.ok(o.narration.includes("Clean?"), "the narration should survive");
+});
+
+test("a raw newline inside the narration is salvaged", () => {
+  const raw = '{"bucket": "INTEGRATED", "narration": "You stand.\nThe fire settles."}';
+  const o = extractJSON(raw);
+  assert.ok(o);
+  assert.equal(normaliseBucket(o.bucket), "INTEGRATED");
+  assert.ok(o.narration.length > 10);
+});
+
+test("salvage works inside a fence too", () => {
+  const raw = '```json\n{"bucket": "CONTRADICTED", "narration": "He says "come on" and walks."}\n```';
+  const o = extractJSON(raw);
+  assert.ok(o);
+  assert.equal(normaliseBucket(o.bucket), "CONTRADICTED");
+});
+
+test("salvage does not invent a result from nothing", () => {
+  for (const bad of ["not json at all", "", "{oops", "[1,2,3]", "I cannot help with that"]) {
+    assert.equal(extractJSON(bad), null, JSON.stringify(bad));
+  }
+});
+
+test("a bucket with no narration is still rejected after salvage", () => {
+  const o = extractJSON('{"bucket": "INTEGRATED"}');
+  assert.ok(!o || !o.narration, "must not fabricate a narration");
+});
+
+/* Must be unparseable AND missing the narration, or salvage never runs and the
+   test proves nothing. This is the shape of a reply truncated mid-write. */
+test("salvage will not invent story text it cannot find", () => {
+  for (const truncated of ['{"bucket": "INTEGRATED", "narration"',
+                           '{"bucket": "PARTIAL" and then it stopped']) {
+    const o = extractJSON(truncated);
+    assert.ok(!o || !o.narration, "invented a narration from " + JSON.stringify(truncated));
+  }
+});

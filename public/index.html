@@ -9,6 +9,7 @@
   body { max-width: 34em; margin: 2rem auto; padding: 0 1rem; }
   .ask { font-weight: 600; }
   .narration { border-left: 3px solid #ccc; padding-left: 1rem; }
+  .said { font-style: italic; }
   .pending { opacity: .6; }
   button { display: block; margin: .4rem 0; }
   input { width: 100%; }
@@ -135,6 +136,12 @@ async function submitReason(reason) {
      worse than a wait. */
   el("reason").disabled = true;
   el("send").disabled = true;
+  /* Their own words belong in the story too. Without this the log shows the
+     button they pressed and nothing they wrote, so they cannot re-read their
+     reasoning — and the reasoning is the whole point. */
+  var said = reason.trim();
+  para(said ? "\u201c" + said + "\u201d" : "\u2014", "said");
+
   el("pending").textContent = "Nel waits.";
   show("pending");
 

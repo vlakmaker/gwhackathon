@@ -267,3 +267,30 @@ test("upstream error bodies are never echoed into the logs", async () => {
   const all = logs.join("\n");
   assert.ok(!all.includes("sk-or-v1-LEAKED"), "an upstream body reached the logs:\n" + all);
 });
+
+/* An unreadable reply is the call failing, so it earns the retry. Before this,
+ * one malformed response meant the player got the flat fallback narration
+ * mid-scene with no second attempt. */
+test("an unreadable primary reply retries on the fallback model", async () => {
+  stubFetch(() => ok("I'm afraid I can't do that"), () => ok(GOOD));
+  const res = await post(turnBody());
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].body.model, MODEL);
+  assert.equal(calls[1].body.model, FALLBACK_MODEL);
+  assert.equal(JSON.parse(res.body).bucket, "INTEGRATED");
+});
+
+test("both models unreadable still gives up after two calls", async () => {
+  stubFetch(() => ok("nonsense"));
+  const res = await post(turnBody());
+  assert.equal(calls.length, 2);
+  assert.equal(res.statusCode, 200);
+  assert.equal(JSON.parse(res.body).bucket, "GENERIC");
+});
+
+test("a salvageable reply needs no retry", async () => {
+  stubFetch(() => ok('{"bucket":"PARTIAL","narration":"He says "no" and sits."}'));
+  const res = await post(turnBody());
+  assert.equal(calls.length, 1, "salvage should avoid spending a second call");
+  assert.equal(JSON.parse(res.body).bucket, "PARTIAL");
+});

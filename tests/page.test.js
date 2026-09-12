@@ -74,3 +74,10 @@ test("the goal line is in the markup, not invented at runtime", () => {
   assert.ok(html.includes("GOAL.role") && html.includes("GOAL.tonight"),
     "the goal line should come from scenes.js");
 });
+
+/* The player's own words are the thing being measured; the log showed the
+ * button they pressed and nothing they wrote. */
+test("the typed reason is appended to the story", () => {
+  assert.ok(/para\(\s*said/.test(html), "the reason is never rendered");
+  assert.ok(/reason\.trim\(\)/.test(html), "the reason is not trimmed before display");
+});
