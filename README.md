@@ -8,6 +8,11 @@ button they chose.
 It is deliberately one encounter: two beats and an ending. There are no
 scores, accounts, saved games, or correct/incorrect messages.
 
+**Play it: https://gwhackathon.netlify.app**
+
+> Reading closely is not how you avoid being tricked. It is how you get what
+> you came for.
+
 ## The idea
 
 The game practises inference rather than recall. A scene includes details from
@@ -25,7 +30,7 @@ It does not announce a verdict or explain the hidden inference.
 ## Player Flow
 
 1. The page shows the player's role, goal, and deadline.
-2. The player reads a scene and chooses one of two or three actions.
+2. The player reads a scene and chooses one of two actions.
 3. Nel, the player's companion, asks, "Alright. Why?"
 4. The player types a short reason in their own words.
 5. The server classifies that reason and returns a short piece of narration.
@@ -59,6 +64,8 @@ The project has no framework, bundler, database, or npm dependencies.
 | `public/scenes.js` | Scene prose, options, routing, and the classifier facts for each scene. |
 | `netlify/functions/turn.js` | Netlify Function that validates a turn, calls the model, and returns `{ bucket, narration }`. |
 | `check.js` | Live acceptance check for the intended classifications. |
+| `bench.js` | Compares models on the same cases, with measured cost and latency. |
+| `docs/method/decision-log.md` | Why each choice was made, including the ones that were wrong first. |
 | `tests/` | Offline structural, API, and parsing tests. |
 | `SPEC.md` | The product and interaction source of truth. |
 
@@ -84,7 +91,15 @@ and falls back to a neutral `GENERIC` narration if a request, model reply, or
 configuration fails.
 
 There is one primary model call per turn. A fallback model is used only if the
-primary call fails, times out, or returns an unusable response.
+primary call fails, times out, or returns an unusable response — including a
+reply that was cut off, since half a sentence on screen is worse than a retry.
+
+The deployed link carries an in-memory abuse ceiling: 40 turns per visitor per
+ten minutes, and a per-container total. A refused turn returns no bucket and no
+narration, and the page says so without advancing the story — no classification
+happened, so charging the player a story consequence for a load problem would
+be a lie. Netlify recycles containers, so this raises the cost of abuse rather
+than preventing it.
 
 Player reasons are never logged. API keys are never returned to the browser or
 included in logs.
@@ -134,6 +149,24 @@ node check.js --runs=3
   care and keep its classifier fields in sync.
 - Never add browser-side model calls, persistence, analytics, or a dependency
   just to solve a small problem.
+
+## Model Choice
+
+Chosen by measurement, not preference. `bench.js`, nine cases times three runs,
+prices from OpenRouter:
+
+| Model | Correct | Latency | Cost / 1000 turns |
+| --- | --- | --- | --- |
+| `anthropic/claude-sonnet-5` | 27/27 | 1390ms | $5.25 |
+| `meta-llama/llama-3.3-70b-instruct` | 24/27 | 564ms | $0.14 |
+| `google/gemini-2.5-flash` | 24/27 | 505ms | $0.52 |
+| `anthropic/claude-haiku-4.5` | 24/27 | 746ms | $1.69 |
+
+All three cheaper models miss the same case: a bare "his boots are dry" read as
+`INTEGRATED` when it is `PARTIAL`. Noticing a detail is not inferring from it,
+and over-rewarding the notice is the one failure this design exists to prevent,
+so accuracy decided it. `gemini-2.5-flash` is the fallback, since it beats
+`haiku-4.5` outright on all three of accuracy, speed and price.
 
 ## Current Limits
 
