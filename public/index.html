@@ -6,167 +6,223 @@
 <title>The Finder</title>
 <!-- Styling is step 5. This is only enough to see the flow. -->
 <style>
-/* Step 5: readable, and nothing else.
+/* 1996, with the reading left alone.
  *
- * Serif, roughly a 65 character measure, generous leading. A twelve year old
- * has to want to finish the first paragraph, and nothing here may compete with
- * the prose for attention.
+ * The chrome is period: teal desktop, a silver window with a navy title bar,
+ * raised and sunken bevels done the old way with four border colours, Times
+ * New Roman, blue underlined accents, a monospace status bar.
  *
- * One rule drives the rest: the narration must read as story, not as feedback.
- * No box, no border, no icon, no colour that says "response". It is set
- * exactly like the scene text, because it is the same story. What separates
- * the turns is the player's own voice, and that is set quieter than the story
- * rather than louder.
+ * The prose is not period. Ninety-nine percent of 1996 pages set text edge to
+ * edge at 1.2 leading and they were miserable to read. This is a reading
+ * comprehension product, so the measure, the serif and the leading stay: a
+ * bored twelve year old has to want to finish the first paragraph.
+ *
+ * Times New Roman happens to be both the 90s default and a perfectly good
+ * reading serif, so nothing had to be traded there.
  */
 
 :root {
-  --paper:  #fdfcfa;
-  --ink:    #221f1c;
-  --quiet:  #6b655d;   /* the player's own lines, and the waiting state */
-  --rule:   #e0dbd2;
-  --accent: #7a3b2e;   /* the clock, and nothing else */
-  --measure: 34em;     /* ~65 characters at this size */
+  --desktop:  #008080;   /* the teal everyone remembers */
+  --chrome:   #c0c0c0;
+  --titlebar: #000080;
+  --page:     #fffff8;
+  --ink:      #000000;
+  --quiet:    #555555;
+  --link:     #0000ee;
+  --rule:     #808080;
+  --measure:  34em;      /* ~65 characters. Non-negotiable. */
 }
 
 @media (prefers-color-scheme: dark) {
+  /* Not a thing in 1996. Included anyway: a page this bright in a dark room
+     is unreadable, and unreadable loses to authentic. */
   :root {
-    --paper:  #1b1a18;
-    --ink:    #e9e5de;
-    --quiet:  #9b948a;
-    --rule:   #35322e;
-    --accent: #d9937f;
+    --desktop:  #003b3b;
+    --chrome:   #4a4a4a;
+    --titlebar: #12123d;
+    --page:     #16150f;
+    --ink:      #ece7d6;
+    --quiet:    #9e988a;
+    --link:     #9db8ff;
+    --rule:     #2a2a2a;
   }
 }
 
-html { background: var(--paper); }
+* { box-sizing: border-box; }
+
+html { background: var(--desktop); }
 
 body {
-  margin: 0 auto;
-  padding: 3rem 1.25rem 6rem;
-  max-width: var(--measure);
-  background: var(--paper);
+  margin: 0;
+  padding: 1.5rem 1rem 3rem;
+  background: var(--desktop);
   color: var(--ink);
-  font: 400 1.1875rem/1.65 "Iowan Old Style", "Palatino Linotype", Palatino,
-        "Book Antiqua", Georgia, "Times New Roman", serif;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
+  font: 400 1.125rem/1.6 "Times New Roman", Times, Georgia, serif;
 }
 
-/* --- the goal line: role, then the clock. Always visible. --------------- */
+/* --- the window ---------------------------------------------------------- */
 
-header {
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--rule);
-}
-#goal-role    { margin: 0 0 .35rem; color: var(--quiet); font-size: .95rem; }
-#goal-tonight { margin: 0; color: var(--accent); font-weight: 600; font-size: 1rem; }
-
-/* --- the story ---------------------------------------------------------- */
-
-main p { margin: 0 0 1.15rem; }
-
-/* The closing question. The scene stops here and they must act. */
-main p.ask {
-  margin-top: 1.6rem;
-  font-weight: 600;
+#window {
+  max-width: var(--measure);
+  margin: 0 auto;
+  background: var(--chrome);
+  padding: 3px;
+  /* raised, the 1995 way */
+  border: 2px solid;
+  border-color: #fff var(--rule) var(--rule) #fff;
 }
 
-/* The player's own voice: the action they took, then what they told Nel.
-   Quieter than the story, and indented, so the prose stays the loudest thing
-   on the page. */
-main p.chose,
-main p.said {
-  margin-left: 1.25rem;
+#titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: var(--titlebar);
+  color: #fff;
+  padding: .25rem .45rem;
+  font: 700 .8125rem/1.3 "Courier New", Courier, monospace;
+  letter-spacing: .02em;
+}
+#titlebar .buttons { font-weight: 400; opacity: .9; letter-spacing: -.05em; }
+
+#page {
+  background: var(--page);
+  padding: 1.5rem 1.4rem 1.75rem;
+  /* sunken */
+  border: 2px solid;
+  border-color: var(--rule) #fff #fff var(--rule);
+}
+
+/* --- the goal line ------------------------------------------------------- */
+
+header { margin: 0 0 1.4rem; }
+#goal-role {
+  margin: 0 0 .4rem;
   color: var(--quiet);
-  font-size: .98rem;
+  font: .8125rem/1.4 "Courier New", Courier, monospace;
 }
-main p.chose { margin-bottom: .3rem; }
-main p.said  { font-style: italic; margin-bottom: 1.6rem; }
+#goal-tonight {
+  margin: 0;
+  padding: .5rem .65rem;
+  background: var(--chrome);
+  border: 2px solid;
+  border-color: #fff var(--rule) var(--rule) #fff;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: .9375rem;
+}
 
-/* Deliberately not styled. It is story. */
+/* --- the story ----------------------------------------------------------- */
+
+main { border-top: 2px groove var(--rule); padding-top: 1.4rem; }
+main p { margin: 0 0 1.1rem; }
+main p.ask { margin-top: 1.5rem; font-weight: 700; }
+
+main p.chose,
+main p.said { margin-left: 1.25rem; color: var(--quiet); font-size: .95rem; }
+main p.chose {
+  margin-bottom: .3rem;
+  font-family: "Courier New", Courier, monospace;
+  font-size: .8125rem;
+}
+main p.said { font-style: italic; margin-bottom: 1.5rem; }
+
+/* Still deliberately unstyled. It is story, not a response. No box, no
+   bevel, no colour — the 90s temptation to put it in a table cell with a
+   background is exactly the mistake. */
 main p.narration { }
 
-/* The ending gets air and a rule, because it is the end. */
-main p.ending {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--rule);
+main p.ending { margin-top: 1.8rem; padding-top: 1.4rem; border-top: 2px groove var(--rule); }
+
+/* --- choosing ------------------------------------------------------------ */
+
+#controls { margin-top: 1.6rem; }
+
+#options button,
+#send {
+  font: 400 1rem/1.3 "Times New Roman", Times, Georgia, serif;
+  background: var(--chrome);
+  color: var(--ink);
+  border: 2px solid;
+  border-color: #fff var(--rule) var(--rule) #fff;
+  cursor: pointer;
 }
-
-/* --- choosing ----------------------------------------------------------- */
-
-#controls { margin-top: 2rem; }
-
 #options button {
   display: block;
   width: 100%;
-  margin: 0 0 .6rem;
-  padding: .7rem .95rem;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-size: 1.0625rem;
+  margin: 0 0 .5rem;
+  padding: .55rem .8rem;
   text-align: left;
-  cursor: pointer;
 }
-#options button:hover  { border-color: var(--ink); }
-#options button:active { transform: translateY(1px); }
+#options button:hover { text-decoration: underline; color: var(--link); }
+#options button:active,
+#send:active { border-color: var(--rule) #fff #fff var(--rule); }
 
 /* --- Nel asking --------------------------------------------------------- */
 
-#nel-stage    { margin: 0 0 .35rem; color: var(--quiet); font-size: .98rem; }
-#nel-question { margin: 0 0 .9rem; font-weight: 600; }
+#nel-stage { margin: 0 0 .35rem; color: var(--quiet); font-size: .95rem; }
+#nel-question { margin: 0 0 .8rem; font-weight: 700; }
 
 #reason {
   width: 100%;
-  box-sizing: border-box;
-  padding: .7rem .95rem;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  background: var(--paper);
+  padding: .5rem .6rem;
+  background: var(--page);
   color: var(--ink);
-  font: inherit;
-  font-size: 1.0625rem;
+  font: 400 1.0625rem/1.4 "Times New Roman", Times, Georgia, serif;
+  border: 2px solid;
+  border-color: var(--rule) #fff #fff var(--rule);   /* sunken field */
 }
 #reason::placeholder { color: var(--quiet); font-style: italic; }
-#reason:focus        { outline: 2px solid var(--accent); outline-offset: 1px; }
-#reason:disabled     { opacity: .55; }
+#reason:focus { outline: 1px dotted var(--ink); outline-offset: 2px; }
+#reason:disabled { background: var(--chrome); }
 
-#send {
-  margin-top: .7rem;
-  padding: .6rem 1.1rem;
-  border: 1px solid var(--ink);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-size: 1rem;
-  cursor: pointer;
-}
-#send:disabled { opacity: .45; cursor: default; }
+#send { margin-top: .65rem; padding: .45rem 1.2rem; }
+#send:disabled { color: var(--quiet); cursor: default; }
 
-/* Waiting. Quiet on purpose — a spinner would make this feel like marking. */
+/* --- the status bar ----------------------------------------------------- */
+
 #pending {
   margin: 0;
+  padding: .4rem .6rem;
+  background: var(--chrome);
+  border: 2px solid;
+  border-color: var(--rule) #fff #fff var(--rule);
+  color: var(--ink);
+  font: .8125rem/1.4 "Courier New", Courier, monospace;
+}
+#pending::after { content: "_"; }
+
+#statusbar {
+  margin: 3px 0 0;
+  padding: .3rem .5rem;
+  background: var(--chrome);
+  border: 2px solid;
+  border-color: var(--rule) #fff #fff var(--rule);
   color: var(--quiet);
-  font-style: italic;
+  font: .75rem/1.4 "Courier New", Courier, monospace;
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
 }
 
 [hidden] { display: none !important; }
 
 @media (max-width: 32em) {
-  body { padding: 2rem 1.1rem 4rem; font-size: 1.125rem; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #options button:active { transform: none; }
+  body { padding: .75rem .5rem 2rem; }
+  #page { padding: 1.1rem 1rem 1.3rem; }
+  #titlebar { font-size: .75rem; }
+  #statusbar { flex-direction: column; gap: .1rem; }
 }
 </style>
 </head>
 <body>
+
+<div id="window">
+  <div id="titlebar">
+    <span>The Finder &ndash; a Greyford job</span>
+    <span class="buttons" aria-hidden="true">_ &#9723; &#10005;</span>
+  </div>
+  <div id="page">
 
 <!-- The role and the clock. Always visible: without it there is no reason to
      investigate anything. -->
@@ -192,6 +248,13 @@ main p.ending {
 
   <p id="pending" class="pending" hidden></p>
 </section>
+
+  </div><!-- /#page -->
+  <p id="statusbar">
+    <span>Document: Done</span>
+    <span>Best viewed with your own eyes</span>
+  </p>
+</div><!-- /#window -->
 
 <script src="scenes.js"></script>
 <script>

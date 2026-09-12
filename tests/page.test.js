@@ -126,3 +126,28 @@ test("it is legible in a dark room and on a phone", () => {
   assert.match(html, /prefers-color-scheme:\s*dark/, "no dark scheme");
   assert.match(html, /@media[^{]*max-width/, "no narrow-screen rule");
 });
+
+/* --- the 90s chrome ------------------------------------------------------ */
+
+test("the window chrome is present", () => {
+  for (const id of ["window", "titlebar", "page", "statusbar"]) {
+    assert.ok(html.includes(`id="${id}"`), `missing #${id}`);
+  }
+  assert.match(html, /--desktop:\s*#008080/i, "the teal desktop is gone");
+});
+
+/* Four-colour borders are what make a bevel look raised or sunken. A plain
+   1px border is a 2010s card, not a 1995 window. */
+test("bevels are done with four border colours, and both directions exist", () => {
+  const raised = /border-color:\s*#fff\s+var\(--rule\)\s+var\(--rule\)\s+#fff/;
+  const sunken = /border-color:\s*var\(--rule\)\s+#fff\s+#fff\s+var\(--rule\)/;
+  assert.match(html, raised, "nothing is raised");
+  assert.match(html, sunken, "nothing is sunken");
+});
+
+/* Period-correct AND the right reading face. The one thing that needed no
+   compromise. */
+test("the body face is Times New Roman", () => {
+  const body = html.match(/body\s*\{[^}]*\}/)[0];
+  assert.match(body, /"Times New Roman"/);
+});
