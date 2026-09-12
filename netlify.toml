@@ -1,0 +1,13 @@
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+  # scenes.js lives in the publish dir and is require()d by the function.
+  # The bundler traces the require, but say it out loud so a deploy cannot
+  # quietly ship a function whose scene data is missing.
+  included_files = ["public/scenes.js"]
+
+[dev]
+  publish = "public"
+  port = 8888
