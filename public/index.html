@@ -429,9 +429,12 @@ function advance(bucket, narration) {
 
   var scene = SCENES[state.sceneId];
 
-  /* Beat 2 ends the encounter. */
+  /* Beat 2 ends the encounter, and the ending answers the action they just
+     took. A single fixed ending contradicted half of them — the quarry branch
+     offered "Make him talk" and then ended with you halfway up the pit road. */
   if (scene.beat === 2) {
-    if (scene.ending) para(scene.ending, "ending");
+    var ending = scene.endings && scene.endings[state.chosen];
+    if (ending) para(ending, "ending");
     show("done");
     el("reason").blur();
     bringIntoView(first);

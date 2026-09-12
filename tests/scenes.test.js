@@ -61,13 +61,25 @@ test("beat 1 is reachable and routes all four buckets to real scenes", () => {
   }
 });
 
-test("no beat-2 scene is orphaned, and each has an ending", () => {
+test("no beat-2 scene is orphaned", () => {
   const reachable = Object.values(SCENES[FIRST_SCENE].next);
   for (const [id, s] of entries) {
     if (s.beat !== 2) continue;
     assert.ok(reachable.includes(id), `${id} is unreachable`);
-    assert.equal(typeof s.ending, "string");
-    assert.ok(s.ending.trim().length > 0, `${id} has an empty ending`);
+  }
+});
+
+/* A single fixed ending contradicted whichever option you did not take. */
+test("every final option has its own ending", () => {
+  for (const [id, s] of entries) {
+    if (s.beat !== 2) continue;
+    assert.ok(s.endings, `${id} has no endings map`);
+    for (const opt of s.options) {
+      assert.equal(typeof s.endings[opt], "string", `${id} has no ending for "${opt}"`);
+      assert.ok(s.endings[opt].trim().length > 20, `${id} ending for "${opt}" is too short`);
+    }
+    assert.equal(Object.keys(s.endings).length, s.options.length,
+      `${id} has an ending for an option that does not exist`);
   }
 });
 
@@ -89,9 +101,16 @@ test("beat 2 scenes stay short enough to re-read", () => {
  * word we ship, not only to what the model generates. */
 test("no shipped prose delivers a verdict", () => {
   const verdict = /\b(correct|incorrect|well done|good spotting|good thinking|right answer|wrong answer)\b/i;
+  /* "it counts for more when it's early" was scoring language in a game built
+     on never scoring anyone. Catch the softer forms too. */
+  const scoring = /\b(counts for|points|score|better next time|you should have)\b/i;
   for (const [id, s] of entries) {
     assert.ok(!verdict.test(s.scene_text), `${id}.scene_text delivers a verdict`);
-    if (s.ending) assert.ok(!verdict.test(s.ending), `${id}.ending delivers a verdict`);
+    assert.ok(!scoring.test(s.scene_text), `${id}.scene_text uses scoring language`);
+    for (const e of Object.values(s.endings || {})) {
+      assert.ok(!verdict.test(e), `${id} has an ending that delivers a verdict`);
+      assert.ok(!scoring.test(e), `${id} has an ending that scores the player`);
+    }
   }
 });
 
