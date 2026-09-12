@@ -36,7 +36,7 @@ is the background for the pitch. Read `SPEC.md` before writing anything.
 |---|---|
 | Test | `node --test` |
 | Dev | `netlify dev` (serves `public/` and the function on :8888) |
-| Acceptance run | `node check.js` — needs `netlify dev` running and a key. **Not written yet (build order step 3).** |
+| Acceptance run | `node check.js` — needs `netlify dev` running and a key |
 | Full check before any handoff | `node --test && node check.js` |
 | Deploy | `netlify deploy --prod` |
 
