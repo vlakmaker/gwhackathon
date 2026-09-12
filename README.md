@@ -8,7 +8,7 @@ button they chose.
 It is deliberately one encounter: two beats and an ending. There are no
 scores, accounts, saved games, or correct/incorrect messages.
 
-**Play it: https://gwhackathon.netlify.app**
+**Play it: https://the-greyford-job.netlify.app**
 
 > Reading closely is not how you avoid being tricked. It is how you get what
 > you came for.
@@ -167,6 +167,15 @@ All three cheaper models miss the same case: a bare "his boots are dry" read as
 and over-rewarding the notice is the one failure this design exists to prevent,
 so accuracy decided it. `gemini-2.5-flash` is the fallback, since it beats
 `haiku-4.5` outright on all three of accuracy, speed and price.
+
+## Licence
+
+MIT. See `LICENSE`.
+
+The code is MIT. The scene prose in `public/scenes.js` is authored content and
+the licence covers it too — but if you reuse the scene, know that its difficulty
+is tuned to a specific inference and the classifier fields must stay in sync
+with whatever you rewrite.
 
 ## Current Limits
 
