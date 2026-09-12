@@ -54,3 +54,15 @@ test("every command AGENTS.md claims to have, it has", () => {
     assert.ok(!s.includes("Not written yet"), "check.js exists — remove the caveat");
   }
 });
+
+/* The decision log is the only record of why. It shipped as a template for six
+ * commits while every real decision went into commit messages, where nobody
+ * asking "why that model?" will look. */
+test("the decision log is written, not a template", () => {
+  const s = read("docs/method/decision-log.md");
+  assert.ok(!s.includes("{{"), "the decision log still contains {{placeholders}}");
+  const entries = (s.match(/^### /gm) || []).length;
+  assert.ok(entries >= 5, `only ${entries} entries — decisions are going unrecorded`);
+  assert.match(s, /^## Open questions/m, "no open questions section");
+  assert.match(s, /^## Superseded/m, "no superseded section");
+});
