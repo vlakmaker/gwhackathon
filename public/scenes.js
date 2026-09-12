@@ -32,7 +32,11 @@ var GOAL = {
 var NEL_PROMPT = {
   stage: "Nel, your partner, watches Dorin over the rim of her cup.",
   question: "Alright. Why?",
-  placeholder: "Type what you tell her..."
+  placeholder: "Type what you tell her...",
+  /* SPEC: "One sentence is a fine answer. Nobody should feel they are writing
+   * for a teacher." That was a requirement and the UI shipped without it. It
+   * must not hint at the answer — only at how little is needed. */
+  reassurance: "One sentence is enough."
 };
 
 var FIRST_SCENE = "greyford-inn";

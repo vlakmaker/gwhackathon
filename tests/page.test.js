@@ -151,3 +151,42 @@ test("the body face is Times New Roman", () => {
   const body = html.match(/body\s*\{[^}]*\}/)[0];
   assert.match(body, /"Times New Roman"/);
 });
+
+/* --- flow fixes: what a stranger hits -------------------------------------- */
+
+test("new writing is scrolled into view", () => {
+  assert.match(html, /scrollIntoView/, "the player answers and nothing appears to happen");
+  /* Presence of the string is not enough — a disabled call still matches. Pin
+     the three places the screen changes and must follow the writing. */
+  const calls = (html.match(/bringIntoView\(/g) || []).length;
+  assert.ok(calls >= 4, `bringIntoView is called ${calls} times; expected the definition plus each place new text lands`);
+  assert.match(html, /bringIntoView\(para\(/, "the player's own line is not scrolled to");
+  assert.match(html, /show\("done"\)[\s\S]{0,160}bringIntoView\(first\)/, "the ending is not scrolled to");
+  assert.match(html, /renderOptions\(next\);\s*\n\s*bringIntoView\(first\)/, "beat 2 is not scrolled to");
+});
+
+test("a second player can start again without reloading", () => {
+  assert.ok(html.includes('id="again"'), "no restart control");
+  assert.match(html, /function restart\(\)/, "no restart function");
+  assert.match(html, /again"\)\.addEventListener/, "the restart control is not wired");
+  /* it must clear the screen and go back to the first scene */
+  assert.match(html, /story"\)\.textContent = ""/, "restart does not clear the story");
+  assert.match(html, /state\.sceneId = FIRST_SCENE/, "restart does not return to beat 1");
+});
+
+test("the end of the encounter is announced", () => {
+  assert.ok(html.includes('id="done"'), "the controls just vanish");
+  assert.match(html, /show\("done"\)/, "the done state is never shown");
+});
+
+/* SPEC: "One sentence is a fine answer. Nobody should feel they are writing
+   for a teacher." Shipped without it the first time. */
+test("the input says how little is enough, without hinting what to say", () => {
+  assert.ok(html.includes('id="reassure"'), "no reassurance line");
+  assert.match(html, /NEL_PROMPT\.reassurance/, "it is not driven by the prose file");
+  const { NEL_PROMPT } = require("../public/scenes.js");
+  assert.ok(NEL_PROMPT.reassurance, "no reassurance text");
+  assert.ok(/sentence|short|few words/i.test(NEL_PROMPT.reassurance), "it should be about length");
+  assert.ok(!/boot|mud|marsh|dry|lying|because/i.test(NEL_PROMPT.reassurance),
+    "the reassurance leaks the inference");
+});

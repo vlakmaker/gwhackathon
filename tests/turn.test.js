@@ -294,3 +294,14 @@ test("a salvageable reply needs no retry", async () => {
   assert.equal(calls.length, 1, "salvage should avoid spending a second call");
   assert.equal(JSON.parse(res.body).bucket, "PARTIAL");
 });
+
+/* Two calls at 20s each was a 40 second silence on a double failure, long past
+ * the point a child decides the page is broken. */
+test("the worst-case wait is bounded well under half a minute", async () => {
+  const src = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "..", "netlify", "functions", "turn.js"), "utf8");
+  const m = src.match(/const TIMEOUT_MS = (\d+);/);
+  assert.ok(m, "no TIMEOUT_MS");
+  const worst = 2 * parseInt(m[1], 10);
+  assert.ok(worst <= 20000, `worst case is ${worst / 1000}s — too long for a twelve year old`);
+});

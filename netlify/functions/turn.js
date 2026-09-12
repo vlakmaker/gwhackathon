@@ -38,7 +38,12 @@ const MODEL          = "anthropic/claude-sonnet-5";
 const FALLBACK_MODEL = "google/gemini-2.5-flash";
 
 const ENDPOINT   = "https://openrouter.ai/api/v1/chat/completions";
-const TIMEOUT_MS = 20000;
+/* Two calls worst case, so this is half the ceiling a player can wait, not the
+ * whole of it. 20s here meant a 40s silence on a double failure — long past the
+ * point a twelve year old decides the page is broken. Measured latency is
+ * 1.4-5s, so 8s is already generous; a call slower than that is a call that has
+ * gone wrong, and giving up on it fast is the point. */
+const TIMEOUT_MS = 8000;
 const MAX_REASON = 600;   /* a sentence is the ask; this is just a stranger-proof ceiling */
 
 const BUCKETS = ["INTEGRATED", "PARTIAL", "GENERIC", "CONTRADICTED"];
